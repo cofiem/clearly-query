@@ -1,4 +1,4 @@
-# Clearly::Query
+# Clearly Query
 
 A library for constructing an sql query from a hash.
 
