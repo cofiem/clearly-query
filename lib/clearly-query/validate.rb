@@ -1,8 +1,10 @@
+require 'active_support/concern'
 
 module ClearlyQuery
 
   # Provides common validations for composing queries.
   module Validate
+    extend ActiveSupport::Concern
 
     def validate_integer(value, min = nil, max = nil)
       validate_not_blank(value)
@@ -216,7 +218,7 @@ module ClearlyQuery
     # @param [String] value
     # @return [String] sanitized value
     def sanitize_projection_alias(value)
-      value.gsub(/[^0-9a-zA-Z_]/) { |_| ''}
+      value.gsub(/[^0-9a-zA-Z_]/) { |_| '' }
     end
 
     # Check that value is a float.

@@ -1,8 +1,11 @@
+require 'active_support/concern'
+
 module ClearlyQuery
   module Compose
 
     # Methods for composing range queries.
     module Range
+      extend ActiveSupport::Concern
       include ClearlyQuery::Validate
 
       # Create IN condition using range.

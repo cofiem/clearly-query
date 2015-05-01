@@ -12,7 +12,7 @@ module ClearlyQuery
     end
 
     # Get the cleaned filter hash.
-    # @returns [Hash]
+    # @return [Hash]
     def cleaned
       @cleaned_hash = clean(hash) if @cleaned_hash.nil?
       @cleaned_hash

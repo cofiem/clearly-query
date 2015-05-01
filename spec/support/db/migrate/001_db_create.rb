@@ -1,0 +1,50 @@
+class DbCreate < ActiveRecord::Migration
+  def change
+    create_table :customers do |t|
+      t.string        :name,            null: false
+      t.datetime      :last_contact_at, null: false
+      t.timestamps null: false
+    end
+
+    create_table :orders do |t|
+      t.string        :title,      null: false
+      t.datetime      :shipped_at, null: true
+      t.timestamps null: false
+    end
+
+    create_table :products do |t|
+      t.string        :name,            null: false
+      t.string        :code,            null: false
+      t.string        :brand,           null: false
+      t.datetime      :introduced_at,   null: false
+      t.datetime      :discontinued_at, null: false
+      t.timestamps null: false
+    end
+
+    create_table :parts do |t|
+      t.string        :name,            null: false
+      t.string        :code,            null: false
+      t.string        :manufacturer,    null: false
+      t.timestamps null: false
+    end
+
+    create_table :products_parts, id: false do |t|
+      t.integer :product_id, null: false
+      t.integer :part_id,    null: false
+      t.timestamps null: false
+    end
+
+    add_index :customers, :name, unique: true
+
+    add_index :orders, :title, unique: true
+
+    add_index :products, :name, unique: true
+    add_index :products, :code, unique: true
+
+    add_index :parts, :name, unique: true
+    add_index :parts, :code, unique: true
+
+    add_index :products_parts, [:product_id, :part_id], unique: true
+
+  end
+end

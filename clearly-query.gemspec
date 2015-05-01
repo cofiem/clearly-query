@@ -18,13 +18,14 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
-  spec.add_runtime_dependency 'arel', '~> 6'
-  spec.add_runtime_dependency 'activesupport', '~> 4'
-  spec.add_runtime_dependency 'activerecord', '~> 4'
+  spec.add_runtime_dependency 'arel', '>= 6'
+  spec.add_runtime_dependency 'activesupport', '>= 4'
+  spec.add_runtime_dependency 'activerecord', '>= 4'
 
-  spec.add_development_dependency 'bundler', '~> 1.9'
-  spec.add_development_dependency 'rake', '~> 10.0'
-  spec.add_development_dependency 'guard-rspec', '~> 4.5'
-  spec.add_development_dependency 'guard-yard', '~> 2.1'
-  spec.add_development_dependency 'simplecov', '~> 0.10'
+  spec.add_development_dependency 'bundler'
+  spec.add_development_dependency 'rake'
+  spec.add_development_dependency 'guard-rspec'
+  spec.add_development_dependency 'guard-yard'
+  spec.add_development_dependency 'simplecov'
+  spec.add_development_dependency 'sqlite3'
 end

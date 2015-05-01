@@ -1,8 +1,11 @@
+require 'active_support/concern'
+
 module ClearlyQuery
   module Compose
 
     # Methods for composing subset queries.
     module Subset
+      extend ActiveSupport::Concern
       include ClearlyQuery::Validate
 
       # Create contains condition.

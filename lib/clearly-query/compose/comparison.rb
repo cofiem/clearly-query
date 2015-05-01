@@ -1,8 +1,11 @@
+require 'active_support/concern'
+
 module ClearlyQuery
   module Compose
 
     # Provides comparisons for composing queries.
     module Comparison
+      extend ActiveSupport::Concern
       include ClearlyQuery::Validate
 
       # Create equals condition.
