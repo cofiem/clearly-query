@@ -7,10 +7,13 @@ class DbCreate < ActiveRecord::Migration
     end
 
     create_table :orders do |t|
-      t.string        :title,      null: false
-      t.datetime      :shipped_at, null: true
+      t.string        :title,       null: false
+      t.datetime      :shipped_at,  null: true
+      t.integer       :customer_id, null: false
       t.timestamps null: false
     end
+
+    add_foreign_key :orders, :customers
 
     create_table :products do |t|
       t.string        :name,            null: false
@@ -20,6 +23,15 @@ class DbCreate < ActiveRecord::Migration
       t.datetime      :discontinued_at, null: false
       t.timestamps null: false
     end
+
+    create_table :orders_products, id: false do |t|
+      t.integer :order_id, null: false
+      t.integer :product_id, null: false
+      t.timestamps null: false
+    end
+
+    add_foreign_key :orders_products, :customers
+    add_foreign_key :orders_products, :orders
 
     create_table :parts do |t|
       t.string        :name,            null: false
@@ -33,6 +45,9 @@ class DbCreate < ActiveRecord::Migration
       t.integer :part_id,    null: false
       t.timestamps null: false
     end
+
+    add_foreign_key :products_parts, :products
+    add_foreign_key :products_parts, :parts
 
     add_index :customers, :name, unique: true
 

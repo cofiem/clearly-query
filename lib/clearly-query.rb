@@ -4,6 +4,7 @@ require 'clearly-query/version'
 require 'clearly-query/errors'
 
 module ClearlyQuery
+  autoload :Helper, 'clearly-query/helper'
   autoload :Validate, 'clearly-query/validate'
 
   module Compose

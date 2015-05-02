@@ -14,8 +14,10 @@ module ClearlyQuery
     # Get the cleaned filter hash.
     # @return [Hash]
     def cleaned
-      @cleaned_hash = clean(hash) if @cleaned_hash.nil?
-      @cleaned_hash
+      #@cleaned_hash = clean(@hash) if @cleaned_hash.nil?
+      #@cleaned_hash
+
+      clean(@hash)
     end
 
     private

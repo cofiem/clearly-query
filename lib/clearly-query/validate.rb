@@ -176,7 +176,7 @@ module ClearlyQuery
     end
 
     def validate_not_blank(value)
-      fail ClearlyQuery::FilterArgumentError, "Value must not be null, got #{value}" if value.blank?
+      fail ClearlyQuery::FilterArgumentError, "Value must not be empty, got #{value}" if value.blank?
     end
 
     def validate_boolean(value)
