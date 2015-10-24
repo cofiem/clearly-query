@@ -6,6 +6,7 @@ SimpleCov.start
 require 'active_record'
 require 'sqlite3'
 require 'logger'
+require 'zonebie'
 
 include ActiveRecord::Tasks
 
@@ -24,6 +25,10 @@ RSpec.configure do |config|
   # the seed, which is printed after each run.
   #     --seed 1234
   config.order = 'random'
+
+  # Zonebie can set this to a random timezone at the beginning of test runs.
+  # Specifically for Active Support, it sets Time.zone.
+  Zonebie.set_random_timezone
 
   app_root = File.expand_path('../..', __FILE__)
   rspec_root = File.join(app_root, 'spec')

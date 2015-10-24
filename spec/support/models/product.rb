@@ -2,11 +2,14 @@ require 'active_record'
 
 class Product < ActiveRecord::Base
 
-  def self.filter_definition
+  has_and_belongs_to_many :parts
+  has_and_belongs_to_many :orders
+
+  def self.clearly_query_def
     {
         fields: {
-            valid: [:name, :code, :brand, :introduced_at, :discontinued_at],
-            text: [:name, :code, :brand],
+            valid: [:title, :name, :code, :brand, :introduced_at, :discontinued_at],
+            text: [:title, :name, :code, :brand],
             mappings: [
                 {
                     name: :title,

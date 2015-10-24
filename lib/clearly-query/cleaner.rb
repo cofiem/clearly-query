@@ -1,23 +1,17 @@
 module ClearlyQuery
 
-  # Parses a filter hash so it is ready to be built using the Composer.
-  class Parser
+  # Cleans a filter hash so it is ready to be built using the Composer.
+  class Cleaner
 
-    # Create a parser for a filter hash.
-    # @param [Hash] hash
-    # @return [void]
-    def initialize(hash)
-      @hash = hash
-      @cleaned_hash = nil
+    # Create a cleaner for a filter hash.
+    def initialize
     end
 
     # Get the cleaned filter hash.
+    # @param [Hash] hash
     # @return [Hash]
-    def cleaned
-      #@cleaned_hash = clean(@hash) if @cleaned_hash.nil?
-      #@cleaned_hash
-
-      clean(@hash)
+    def do(hash)
+      clean(hash)
     end
 
     private
@@ -51,11 +45,7 @@ module ClearlyQuery
     # @param [Array] array
     # @return [Array]
     def clean_array(array)
-      cleaned_array = []
-      array.each do |item|
-        cleaned_array.push(clean(item))
-      end
-      cleaned_array
+      array.map { |item| clean(item) }
     end
 
     # Convert to a snake case symbol

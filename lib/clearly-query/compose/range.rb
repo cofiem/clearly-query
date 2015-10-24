@@ -1,11 +1,8 @@
-require 'active_support/concern'
-
 module ClearlyQuery
   module Compose
 
     # Methods for composing range queries.
     module Range
-      extend ActiveSupport::Concern
       include ClearlyQuery::Validate
 
       # Create IN condition using range.
@@ -25,24 +22,24 @@ module ClearlyQuery
       # @param [Hash] hash
       # @return [Arel::Nodes::Node] condition
       def compose_range_options_node(node, hash)
-        fail ClearlyQuery::FilterArgumentError.new("Range filter must be {'from': 'value', 'to': 'value'} or {'interval': 'value'} got #{hash}") unless hash.is_a?(Hash)
+        fail ClearlyQuery::FilterArgumentError.new("range filter must be {'from': 'value', 'to': 'value'} or {'interval': 'value'} got '#{hash}'") unless hash.is_a?(Hash)
 
         from = hash[:from]
         to = hash[:to]
         interval = hash[:interval]
 
         if !from.blank? && !to.blank? && !interval.blank?
-          fail ClearlyQuery::FilterArgumentError.new("Range filter must use either ('from' and 'to') or ('interval'), not both.", {hash: hash})
+          fail ClearlyQuery::FilterArgumentError.new("range filter must use either ('from' and 'to') or ('interval'), not both", {hash: hash})
         elsif from.blank? && !to.blank?
-          fail ClearlyQuery::FilterArgumentError.new("Range filter missing 'from'.", {hash: hash})
+          fail ClearlyQuery::FilterArgumentError.new("range filter missing 'from'", {hash: hash})
         elsif !from.blank? && to.blank?
-          fail ClearlyQuery::FilterArgumentError.new("Range filter missing 'to'.", {hash: hash})
+          fail ClearlyQuery::FilterArgumentError.new("range filter missing 'to'", {hash: hash})
         elsif !from.blank? && !to.blank?
           compose_range_node(node, from, to)
         elsif !interval.blank?
           compose_range_string_node(node, interval)
         else
-          fail ClearlyQuery::FilterArgumentError.new("Range filter was not valid (#{hash})", {hash: hash})
+          fail ClearlyQuery::FilterArgumentError.new("range filter did not contain ('from' and 'to') or ('interval'), got '#{hash}'", {hash: hash})
         end
       end
 
@@ -84,7 +81,7 @@ module ClearlyQuery
 
         range_regex = /(\[|\()(.*),(.*)(\)|\])/i
         matches = range_string.match(range_regex)
-        fail ClearlyQuery::FilterArgumentError.new("Range string must be in the form (|[.*,.*]|), got #{range_string.inspect}") unless matches
+        fail ClearlyQuery::FilterArgumentError.new("range string must be in the form (|[.*,.*]|), got '#{range_string}'") unless matches
 
         captures = matches.captures
 

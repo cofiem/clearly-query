@@ -1,6 +1,10 @@
 module ClearlyQuery
+
+  # Utility methods for working with Arel.
   class Helper
     class << self
+
+      # Concatenate one or more strings
       def string_concat(*args)
         adapter = ActiveRecord::Base.connection.adapter_name.underscore.downcase
 
@@ -9,13 +13,19 @@ module ClearlyQuery
             Arel::Nodes::NamedFunction.new('concat', *args)
           when 'sqlserver'
             string_concat_infix('+', *args)
-          else
+          when 'postgres'
+          when 'sq_lite'
             string_concat_infix('||', *args)
+          else
+            fail ArgumentError, "unsupported database adapter '#{adapter}'"
         end
       end
 
+      # Concatenate strings using an operator
       def string_concat_infix(operator, *args)
-        fail ArgumentError, "String concatenation requires two or more arguments, given #{args.size}" if args.size < 2
+        if args.blank? || args.size < 2
+          fail ArgumentError, "string concatenation requires operator and two or more arguments, given '#{args.size}'"
+        end
 
         result = Arel::Nodes::InfixOperation.new(operator, args[0], args[1])
 

@@ -1,3 +1,5 @@
+# Clearly Query namespace
 module ClearlyQuery
-    VERSION = '0.0.1'
+  # Gem version
+  VERSION = '0.1.0'
 end

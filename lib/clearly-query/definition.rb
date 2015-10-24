@@ -12,7 +12,9 @@ module ClearlyQuery
                 :all_fields, :text_fields, :mapped_fields,
                 :associations, :defaults
 
+    # Create a Definition
     def initialize(model, hash)
+      validate_model(model)
       validate_definition(hash)
       @raw = hash
 
@@ -34,7 +36,7 @@ module ClearlyQuery
     # @param [Symbol] field
     # @return [Arel::Table, Symbol, Hash] table, field, filter_settings
     def parse_table_field(field)
-      fail ClearlyQuery::FilterArgumentError.new('Field name must be a symbol.') unless field.is_a?(Symbol)
+      fail ClearlyQuery::FilterArgumentError.new('field name must be a symbol') unless field.is_a?(Symbol)
 
       field_s = field.to_s
 
@@ -52,7 +54,7 @@ module ClearlyQuery
 
         validate_association(model, models)
 
-        model_filter_settings = model.filter_settings
+        model_filter_settings = model.clearly_query_def
         model_valid_fields = model_filter_settings[:fields][:valid].map(&:to_sym)
         arel_table = relation_table(model)
 
@@ -136,6 +138,9 @@ module ClearlyQuery
       [[], false]
     end
 
+    # Build custom field from model mappings
+    # @param [Symbol] column_name
+    # @return [Arel::Nodes::Node, Arel::Attributes::Attribute, String]
     def build_custom_field(column_name)
 
       mappings = {}

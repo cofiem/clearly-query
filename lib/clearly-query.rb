@@ -3,19 +3,14 @@ require 'active_support/all'
 require 'clearly-query/version'
 require 'clearly-query/errors'
 
-module ClearlyQuery
-  autoload :Helper, 'clearly-query/helper'
-  autoload :Validate, 'clearly-query/validate'
+require 'clearly-query/helper'
+require 'clearly-query/validate'
 
-  module Compose
-    autoload :Core, 'clearly-query/compose/core'
-    autoload :Subset, 'clearly-query/compose/subset'
-    autoload :Comparison, 'clearly-query/compose/comparison'
-    autoload :Range, 'clearly-query/compose/range'
-  end
+require 'clearly-query/compose/core'
+require 'clearly-query/compose/subset'
+require 'clearly-query/compose/comparison'
+require 'clearly-query/compose/range'
 
-  autoload :Parser, 'clearly-query/parser'
-  autoload :Composer, 'clearly-query/composer'
-  autoload :Definition, 'clearly-query/definition'
-
-end
+require 'clearly-query/cleaner'
+require 'clearly-query/composer'
+require 'clearly-query/definition'

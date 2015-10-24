@@ -2,15 +2,17 @@ require 'active_record'
 
 class Part < ActiveRecord::Base
 
-  def self.filter_definition
+  has_and_belongs_to_many :products
+
+  def self.clearly_query_def
     {
         fields: {
-            valid: [:title, :shipped_at],
-            text: [:title],
+            valid: [:title, :name, :code, :manufacturer],
+            text: [:title, :name, :code, :manufacturer],
             mappings: [
                 {
-                    name: :name,
-                    value: ClearlyQuery::Helper.string_concat(Order.arel_table[:name], ' (name)')
+                    name: :title,
+                    value: ClearlyQuery::Helper.string_concat(Part.arel_table[:code], Part.arel_table[:manufacturer])
                 }
             ]
         },

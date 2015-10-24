@@ -2,7 +2,9 @@ require 'active_record'
 
 class Customer < ActiveRecord::Base
 
-  def self.filter_definition
+  has_many :orders, inverse_of: :customer
+
+  def self.clearly_query_def
     {
         fields: {
             valid: [:name, :last_contact_at],

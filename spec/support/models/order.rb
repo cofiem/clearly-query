@@ -2,15 +2,24 @@ require 'active_record'
 
 class Order < ActiveRecord::Base
 
-  def self.filter_definition
+  belongs_to :customer, inverse_of: :orders
+  has_and_belongs_to_many :products
+
+  def self.clearly_query_def
     {
         fields: {
             valid: [:title, :shipped_at],
             text: [:title],
             mappings: [
                 {
-                    name: :name,
-                    value: ClearlyQuery::Helper.string_concat(Order.arel_table[:name], ' (name)')
+                    name: :title,
+                    value: ClearlyQuery::Helper.string_concat(
+                        Customer.arel_table
+                            .where(Customer.arel_table[:id].eq(Order.arel_table[:customer_id]))
+                            .project(Customer.arel_table[:name]),
+                        ' (',
+                        Arel::Nodes::SqlLiteral.new('CASE WHEN "orders"."shipped_at" IS NULL THEN \'not shipped\' ELSE "orders"."shipped_at" END'),
+                        ')')
                 }
             ]
         },

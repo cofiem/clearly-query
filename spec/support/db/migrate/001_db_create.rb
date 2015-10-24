@@ -7,7 +7,6 @@ class DbCreate < ActiveRecord::Migration
     end
 
     create_table :orders do |t|
-      t.string        :title,       null: false
       t.datetime      :shipped_at,  null: true
       t.integer       :customer_id, null: false
       t.timestamps null: false
@@ -50,8 +49,6 @@ class DbCreate < ActiveRecord::Migration
     add_foreign_key :products_parts, :parts
 
     add_index :customers, :name, unique: true
-
-    add_index :orders, :title, unique: true
 
     add_index :products, :name, unique: true
     add_index :products, :code, unique: true

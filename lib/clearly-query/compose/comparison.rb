@@ -1,11 +1,10 @@
-require 'active_support/concern'
-
 module ClearlyQuery
+
+  # Arel helper methods used by Composer and Definition
   module Compose
 
     # Provides comparisons for composing queries.
     module Comparison
-      extend ActiveSupport::Concern
       include ClearlyQuery::Validate
 
       # Create equals condition.

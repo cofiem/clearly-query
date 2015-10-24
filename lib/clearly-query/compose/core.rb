@@ -1,11 +1,8 @@
-require 'active_support/concern'
-
 module ClearlyQuery
   module Compose
 
     # Provides 'and', and 'or' for composing queries.
     module Core
-      extend ActiveSupport::Concern
       include ClearlyQuery::Validate
 
       # Get the ActiveRecord::Relation that represents zero records.
