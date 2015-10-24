@@ -12,7 +12,7 @@ mkmf.log
 /spec/reports/
 /test/tmp/
 /test/version_tmp/
-/tmp/
+/tmp/*
 !/tmp/.gitkeep
 /.idea/
 
