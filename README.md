@@ -4,6 +4,9 @@ A library for constructing an sql query from a hash.
 
 Uses [Arel](https://github.com/rails/arel) and [ActiveRecord](https://github.com/rails/rails/tree/master/activerecord).
 
+## Project Status
+
+[![Build Status](https://travis-ci.org/cofiem/clearly-query.svg?branch=master)](https://travis-ci.org/cofiem/clearly-query)
 [![Dependency Status](https://gemnasium.com/cofiem/clearly-query.svg)](https://gemnasium.com/cofiem/clearly-query)
 [![Code Climate](https://codeclimate.com/github/cofiem/clearly-query/badges/gpa.svg)](https://codeclimate.com/github/cofiem/clearly-query)
 [![Test Coverage](https://codeclimate.com/github/cofiem/clearly-query/badges/coverage.svg)](https://codeclimate.com/github/cofiem/clearly-query/coverage)
