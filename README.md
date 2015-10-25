@@ -1,5 +1,7 @@
 # Clearly Query
 
+[![Join the chat at https://gitter.im/cofiem/clearly-query](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cofiem/clearly-query?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 A library for constructing an sql query from a hash.
 
 Uses [Arel](https://github.com/rails/arel) and [ActiveRecord](https://github.com/rails/rails/tree/master/activerecord).
