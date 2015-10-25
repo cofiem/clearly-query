@@ -1,7 +1,5 @@
 # Clearly Query
 
-[![Join the chat at https://gitter.im/cofiem/clearly-query](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cofiem/clearly-query?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 A library for constructing an sql query from a hash.
 
 Uses [Arel](https://github.com/rails/arel) and [ActiveRecord](https://github.com/rails/rails/tree/master/activerecord).
@@ -14,6 +12,7 @@ Uses [Arel](https://github.com/rails/arel) and [ActiveRecord](https://github.com
 [![Test Coverage](https://codeclimate.com/github/cofiem/clearly-query/badges/coverage.svg)](https://codeclimate.com/github/cofiem/clearly-query/coverage)
 [![Documentation Status](https://inch-ci.org/github/cofiem/clearly-query.svg?branch=master)](https://inch-ci.org/github/cofiem/clearly-query)
 [![Documentation](https://img.shields.io/badge/docs-rdoc.info-blue.svg)](http://www.rubydoc.info/github/cofiem/clearly-query)
+[![Join the chat at https://gitter.im/cofiem/clearly-query](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cofiem/clearly-query?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Installation
 
