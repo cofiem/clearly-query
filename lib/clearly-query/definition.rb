@@ -6,6 +6,7 @@ module ClearlyQuery
     include ClearlyQuery::Compose::Core
     include ClearlyQuery::Compose::Range
     include ClearlyQuery::Compose::Subset
+    include ClearlyQuery::Compose::Special
     include ClearlyQuery::Validate
 
 
@@ -22,10 +23,13 @@ module ClearlyQuery
     attr_reader :text_fields
 
     # @return [Array<Hash>] mapped model fields
-    attr_reader  :mapped_fields
+    attr_reader :field_mappings
 
     # @return [Array<Hash>] model associations
     attr_reader :associations
+
+    # @return [Array<Hash>] model associations
+    attr_reader :associations_flat
 
     # @return [Hash] defaults
     attr_reader :defaults
@@ -47,9 +51,10 @@ module ClearlyQuery
 
       mappings = {}
       hash[:fields][:mappings].each { |m| mappings[m[:name]] = m[:value] }
-      @mapped_fields = mappings
+      @field_mappings = mappings
 
-      @associations = build_associations(hash[:associations], @table)
+      @associations = hash[:associations]
+      @associations_flat = build_associations(hash[:associations], @table)
       @defaults = hash[:defaults]
 
       self
@@ -68,8 +73,8 @@ module ClearlyQuery
         parsed_table = field[0, dot_index].to_sym
         parsed_field = field[(dot_index + 1)..field.length].to_sym
 
-        models = @associations.map { |a| a[:join] }
-        table_names = @associations.map { |a| a[:join].table_name.to_sym }
+        models = @associations_flat.map { |a| a[:join] }
+        table_names = @associations_flat.map { |a| a[:join].table_name.to_sym }
 
         validate_name(parsed_table, table_names)
 
@@ -151,7 +156,7 @@ module ClearlyQuery
 
         if a.include?(:associations)
           assoc = a[:associations]
-          assoc_joins, match = build_joins(model, assoc, joins + [join])
+          assoc_joins, match = build_joins(model, assoc, [join] + joins)
 
           return [[join] + assoc_joins, true] if match
         end
@@ -165,14 +170,8 @@ module ClearlyQuery
     # @param [Symbol] column_name
     # @return [Arel::Nodes::Node, Arel::Attributes::Attribute, String]
     def build_custom_field(column_name)
-
-      mappings = {}
-      unless @field_mappings.blank?
-        @field_mappings.each { |m| mappings[m[:name]] = m[:value] }
-      end
-
-      value = mappings[column_name]
-      if mappings.keys.include?(column_name) && !value.blank?
+      value = @field_mappings[column_name]
+      if @field_mappings.keys.include?(column_name) && !value.blank?
         value
       else
         nil

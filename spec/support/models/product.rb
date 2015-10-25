@@ -13,7 +13,13 @@ class Product < ActiveRecord::Base
             mappings: [
                 {
                     name: :title,
-                    value: ClearlyQuery::Helper.string_concat(Product.arel_table[:brand], ' ', Product.arel_table[:name], ' (', Product.arel_table[:code], ')')
+                    value: ClearlyQuery::Helper.string_concat(
+                        Product.arel_table[:brand],
+                        Arel::Nodes.build_quoted(' '),
+                        Product.arel_table[:name],
+                        Arel::Nodes.build_quoted(' ('),
+                        Product.arel_table[:code],
+                        Arel::Nodes.build_quoted(')'))
                 }
             ]
         },

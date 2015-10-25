@@ -5,6 +5,8 @@ module ClearlyQuery
     module Core
       include ClearlyQuery::Validate
 
+      private
+
       # Get the ActiveRecord::Relation that represents zero records.
       # @param [ActiveRecord::Base] model
       # @return [ActiveRecord::Relation] query that will get zero records

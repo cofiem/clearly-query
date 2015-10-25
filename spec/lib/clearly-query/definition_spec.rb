@@ -20,5 +20,4 @@ describe ClearlyQuery::Definition do
   end
 
 
-
 end

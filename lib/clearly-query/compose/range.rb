@@ -5,167 +5,106 @@ module ClearlyQuery
     module Range
       include ClearlyQuery::Validate
 
-      # Create IN condition using range.
-      # @param [Arel::Table] table
-      # @param [Symbol] column_name
-      # @param [Array<Symbol>] allowed
-      # @param [Hash] hash
-      # @return [Arel::Nodes::Node] condition
-      def compose_range_options(table, column_name, allowed, hash)
-        validate_table_column(table, column_name, allowed)
-        compose_range_options_node(table[column_name], hash)
+      # Parse an interval.
+      # @param [String] value
+      # @return [Array<String>] captures
+      def parse_interval(value)
+        range_regex = /(\[|\()(.*),(.*)(\)|\])/i
+        matches = value.match(range_regex)
+        fail ClearlyQuery::FilterArgumentError.new(
+                 "range string must be in the form (|[.*,.*]|), got '#{value}'") unless matches
+
+        captures = matches.captures
+        {
+            start_include: captures[0] == '[',
+            start_value: captures[1],
+            end_value: captures[2],
+            end_include: captures[3] == ']'
+        }
       end
 
-
-      # Create IN condition using range.
-      # @param [Arel::Nodes::Node, Arel::Attributes::Attribute, String] node
+      # Validate a range.
       # @param [Hash] hash
-      # @return [Arel::Nodes::Node] condition
-      def compose_range_options_node(node, hash)
-        fail ClearlyQuery::FilterArgumentError.new("range filter must be {'from': 'value', 'to': 'value'} or {'interval': 'value'} got '#{hash}'") unless hash.is_a?(Hash)
+      # @return [Hash]
+      def parse_range(hash)
+        unless hash.is_a?(Hash)
+          fail ClearlyQuery::FilterArgumentError.new(
+                   "range filter must be {'from': 'value', 'to': 'value'} " +
+                       "or {'interval': '(|[.*,.*]|)'} got '#{hash}'", {hash: hash})
+
+        end
 
         from = hash[:from]
         to = hash[:to]
         interval = hash[:interval]
 
         if !from.blank? && !to.blank? && !interval.blank?
-          fail ClearlyQuery::FilterArgumentError.new("range filter must use either ('from' and 'to') or ('interval'), not both", {hash: hash})
+          fail ClearlyQuery::FilterArgumentError.new(
+                   "range filter must use either ('from' and 'to') or ('interval'), not both", {hash: hash})
         elsif from.blank? && !to.blank?
-          fail ClearlyQuery::FilterArgumentError.new("range filter missing 'from'", {hash: hash})
+          fail ClearlyQuery::FilterArgumentError.new(
+                   "range filter missing 'from'", {hash: hash})
         elsif !from.blank? && to.blank?
-          fail ClearlyQuery::FilterArgumentError.new("range filter missing 'to'", {hash: hash})
+          fail ClearlyQuery::FilterArgumentError.new(
+                   "range filter missing 'to'", {hash: hash})
         elsif !from.blank? && !to.blank?
-          compose_range_node(node, from, to)
+          parse_interval("[#{from},#{to})")
         elsif !interval.blank?
-          compose_range_string_node(node, interval)
+          parse_interval(interval)
         else
-          fail ClearlyQuery::FilterArgumentError.new("range filter did not contain ('from' and 'to') or ('interval'), got '#{hash}'", {hash: hash})
+          fail ClearlyQuery::FilterArgumentError.new(
+                   "range filter did not contain ('from' and 'to') or ('interval'), got '#{hash}'", {hash: hash})
         end
       end
 
-      # Create NOT IN condition using range.
-      # @param [Arel::Table] table
-      # @param [Symbol] column_name
-      # @param [Array<Symbol>] allowed
-      # @param [Hash] hash
-      # @return [Arel::Nodes::Node] condition
-      def compose_not_range_options(table, column_name, allowed, hash)
-        compose_range_options(table, column_name, allowed, hash).not
-      end
+      private
 
-      # Create NOT IN condition using range.
+      # Create IN condition using from (inclusive) and to (exclusive).
       # @param [Arel::Nodes::Node, Arel::Attributes::Attribute, String] node
-      # @param [Hash] hash
+      # @param [Object] value
       # @return [Arel::Nodes::Node] condition
-      def compose_not_range_options_node(node, hash)
-        compose_range_options_node(node, hash).not
-      end
-
-      # Create IN condition using range.
-      # @param [Arel::Table] table
-      # @param [Symbol] column_name
-      # @param [Array<Symbol>] allowed
-      # @param [String] range_string
-      # @return [Arel::Nodes::Node] condition
-      def compose_range_string(table, column_name, allowed, range_string)
-        validate_table_column(table, column_name, allowed)
-        compose_range_string_node(table[column_name], range_string)
-      end
-
-      # Create IN condition using range.
-      # @param [Arel::Nodes::Node, Arel::Attributes::Attribute, String] node
-      # @param [String] range_string
-      # @return [Arel::Nodes::Node] condition
-      def compose_range_string_node(node, range_string)
+      def compose_range_node(node, value)
         validate_node_or_attribute(node)
-
-        range_regex = /(\[|\()(.*),(.*)(\)|\])/i
-        matches = range_string.match(range_regex)
-        fail ClearlyQuery::FilterArgumentError.new("range string must be in the form (|[.*,.*]|), got '#{range_string}'") unless matches
-
-        captures = matches.captures
-
-        # get ends spec's and values
-        start_exclude = captures[0] == ')'
-        start_value = captures[1]
-        end_value = captures[2]
-        end_exclude = captures[3] == ')'
+        range_info = parse_range(value)
 
         # build using gt, lt, gteq, lteq
-        if start_exclude
-          start_condition = node.gt(start_value)
+        if range_info[:start_include]
+          start_condition = node.gteq(range_info[:start_value])
         else
-          start_condition = node.gteq(start_value)
+          start_condition = node.gt(range_info[:start_value])
         end
 
-        if end_exclude
-          end_condition = node.lt(end_value)
+        if range_info[:end_include]
+          end_condition = node.lteq(range_info[:end_value])
         else
-          end_condition = node.lteq(end_value)
+          end_condition = node.lt(range_info[:end_value])
         end
 
         start_condition.and(end_condition)
       end
 
-      # Create NOT IN condition using range.
-      # @param [Arel::Table] table
-      # @param [Symbol] column_name
-      # @param [Array<Symbol>] allowed
-      # @param [String] range_string
-      # @return [Arel::Nodes::Node] condition
-      def compose_not_range_string(table, column_name, allowed, range_string)
-        compose_range_string(table, column_name, allowed, range_string).not
-      end
-
-      # Create NOT IN condition using range.
+      # Create NOT IN condition using from (inclusive) and to (exclusive).
       # @param [Arel::Nodes::Node, Arel::Attributes::Attribute, String] node
-      # @param [String] range_string
+      # @param [Object] value
       # @return [Arel::Nodes::Node] condition
-      def compose_not_range_string_node(node, range_string)
-        compose_range_string_node(node, range_string).not
-      end
-
-      # Create IN condition using from (inclusive) and to (exclusive).
-      # @param [Arel::Table] table
-      # @param [Symbol] column_name
-      # @param [Array<Symbol>] allowed
-      # @param [Object] from
-      # @param [Object] to
-      # @return [Arel::Nodes::Node] condition
-      def compose_range(table, column_name, allowed, from, to)
-        validate_table_column(table, column_name, allowed)
-        compose_range_node(table[column_name], from, to)
-      end
-
-      # Create IN condition using from (inclusive) and to (exclusive).
-      # @param [Arel::Nodes::Node, Arel::Attributes::Attribute, String] node
-      # @param [Object] from
-      # @param [Object] to
-      # @return [Arel::Nodes::Node] condition
-      def compose_range_node(node, from, to)
+      def compose_not_range_node(node, value)
         validate_node_or_attribute(node)
-        range = ::Range.new(from, to, true)
-        node.in(range)
-      end
+        range_info = parse_range(value)
 
-      # Create NOT IN condition using from (inclusive) and to (exclusive).
-      # @param [Arel::Table] table
-      # @param [Symbol] column_name
-      # @param [Array<Symbol>] allowed
-      # @param [Object] from
-      # @param [Object] to
-      # @return [Arel::Nodes::Node] condition
-      def compose_not_range(table, column_name, allowed, from, to)
-        compose_range(table, column_name, allowed, from, to).not
-      end
+        # build using gt, lt, gteq, lteq
+        if range_info[:start_include]
+          start_condition = node.lt(range_info[:start_value])
+        else
+          start_condition = node.lteq(range_info[:start_value])
+        end
 
-      # Create NOT IN condition using from (inclusive) and to (exclusive).
-      # @param [Arel::Nodes::Node, Arel::Attributes::Attribute, String] node
-      # @param [Object] from
-      # @param [Object] to
-      # @return [Arel::Nodes::Node] condition
-      def compose_not_range_node(node, from, to)
-        compose_range_node(node, from, to).not
+        if range_info[:end_include]
+          end_condition = node.gt(range_info[:end_value])
+        else
+          end_condition = node.gteq(range_info[:end_value])
+        end
+
+        start_condition.or(end_condition)
       end
 
     end

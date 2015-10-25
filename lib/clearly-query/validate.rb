@@ -149,7 +149,7 @@ module ClearlyQuery
         # all items must be the same type. Assume the first item is the correct type.
         type_compare_item = value[0].class
         type_compare = value.all? { |item| item.is_a?(type_compare_item) }
-        fail ClearlyQuery::FilterArgumentError, 'array values must be a single consistent type' unless type_compare
+        fail ClearlyQuery::FilterArgumentError, "array values must be a single consistent type, got '#{value.map { |v| v.class.name }.join(', ')}'" unless type_compare
 
         # restrict length of strings
         if type_compare_item.is_a?(String)
@@ -238,6 +238,14 @@ module ClearlyQuery
       value.gsub(/[^0-9a-zA-Z_]/) { |_| '' }
     end
 
+    # Create LIKE syntax.
+    # @param [String] value
+    # @param [Hash] options
+    # @return [String]
+    def like_syntax(value, options = {start: false, end: false})
+      "#{options[:start] ? '%' : ''}#{sanitize_like_value(value)}#{options[:end] ? '%' : ''}"
+    end
+
     # Check that value is a float.
     # @param [Object] value
     # @raise [FilterArgumentError] if value is not a float
@@ -252,6 +260,14 @@ module ClearlyQuery
       value_f = filtered.to_f
       fail ClearlyQuery::FilterArgumentError, "value must be greater than 0, got '#{value_f}'" if value_f <= 0
 
+    end
+
+    # Validate definition instance
+    # @param [ClearlyQuery::Definition] value
+    # @return [void]
+    def validate_definition_instance(value)
+      validate_not_blank(value)
+      fail ClearlyQuery::FilterArgumentError, "value must be a model definition, got '#{value.class}'" unless value.is_a?(ClearlyQuery::Definition)
     end
 
     # Validate definition specification

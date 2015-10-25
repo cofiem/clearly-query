@@ -17,9 +17,9 @@ class Order < ActiveRecord::Base
                         Customer.arel_table
                             .where(Customer.arel_table[:id].eq(Order.arel_table[:customer_id]))
                             .project(Customer.arel_table[:name]),
-                        ' (',
+                        Arel::Nodes.build_quoted(' ('),
                         Arel::Nodes::SqlLiteral.new('CASE WHEN "orders"."shipped_at" IS NULL THEN \'not shipped\' ELSE "orders"."shipped_at" END'),
-                        ')')
+                        Arel::Nodes.build_quoted(')'))
                 }
             ]
         },

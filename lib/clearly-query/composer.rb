@@ -6,6 +6,7 @@ module ClearlyQuery
     include ClearlyQuery::Compose::Core
     include ClearlyQuery::Compose::Range
     include ClearlyQuery::Compose::Subset
+    include ClearlyQuery::Compose::Special
     include ClearlyQuery::Validate
 
     # filter operators
@@ -33,7 +34,10 @@ module ClearlyQuery
         :not_starts_with, :not_start_with, :does_not_start_with,
         :ends_with, :end_with,
         :not_ends_with, :not_end_with, :does_not_end_with,
-        :regex
+        :regex,
+
+        # special
+        :null, :is_null
     ]
 
     # @return [Array<ClearlyQuery::Definition>] available definitions
@@ -184,77 +188,53 @@ module ClearlyQuery
     # @param [Arel::Nodes::Node, Array<Arel::Nodes::Node>] conditions
     # @return [Arel::Nodes::Node, Array<Arel::Nodes::Node>]
     def build_subquery(definition, info, conditions)
+      validate_hash(info)
+
+      # ensure each condition is valid
+      [conditions].flatten.each { |c| validate_node_or_attribute(c) }
 
       current_table = info[:arel_table]
-      current_definition = select_definition_from_table(current_table)
       model = info[:model]
 
-      # TODO: turn this into an EXISTS query
-      # e.g.
-=begin
-SELECT *
-FROM sites
-WHERE
-    EXISTS
-        (SELECT 1
-        FROM projects_sites
-        WHERE
-            "sites"."id" = "projects_sites"."site_id"
-            AND EXISTS (
-                (SELECT 1
-                FROM "projects"
-                WHERE
-                    "projects"."deleted_at" IS NULL
-                    AND "projects"."creator_id" = 7
-                    AND "projects_sites"."project_id" = "projects"."id"
-                )
-                UNION ALL
-                (SELECT 1
-                FROM "permissions"
-                WHERE
-                    "permissions"."user_id" = 7
-                    AND "permissions"."level" IN ('reader', 'writer', 'owner')
-                    AND "projects_sites"."project_id" = "permissions"."project_id"
-                )
-            )
-        )
-OR
-    EXISTS
-        (SELECT 1
-        FROM "audio_events" ae1
-        WHERE
-            ae1."deleted_at" IS NULL
-            AND ae1."is_reference" = TRUE
-            AND "audio_events"."id" = ae1.id
-        )
-=end
+      current_definition = select_definition_from_table(current_table)
 
+      if current_table.name == definition.table.name
+        # don't need to build a subquery if the tables
+        # are the same, just use the conditions
+        conditions
+      else
+        # build an exist subquery to apply conditions that
+        # refer to another table
 
-      if current_table != definition.table
-        subquery = current_table.project(current_table[:id])
+        subquery = current_table
 
         # add conditions to subquery
-        if conditions.respond_to?(:each)
-          conditions.each { |c| subquery = subquery.where(c) }
-        else
-          subquery = subquery.where(result)
+        [conditions].flatten.each do |c|
+          subquery = subquery.where(c)
         end
 
-        # add relevant joins
+        # add joins to get access to the relevant tables
+        # using the associations from the model definition being used for the subquery
         joins, match = current_definition.build_joins(model, definition.associations)
 
         joins.each do |j|
-          table = j[:join]
+          join_table = j[:join]
+          join_condition = j[:on]
           # assume this is an arel_table if it doesn't respond to .arel_table
-          arel_table = table.respond_to?(:arel_table) ? table.arel_table : table
-          subquery = subquery.join(arel_table, Arel::Nodes::OuterJoin).on(j[:on])
+          arel_table = join_table.respond_to?(:arel_table) ? join_table.arel_table : join_table
+
+          if arel_table.name == current_table.name
+            # add join as condition if this is the main table in the subquery
+            subquery = subquery.where(join_condition)
+          else
+            # add full join if this is not the main table in the subquery
+            subquery = subquery.join(arel_table).on(join_condition)
+          end
+
         end
 
-        compose_in(current_table, :id, [:id], subquery)
-      else
-        conditions
+        subquery.project(1).exists
       end
-
     end
 
     # Add conditions to a query.
@@ -323,60 +303,8 @@ OR
     # @param [Object] filter_value
     # @return [Arel::Nodes::Node] condition
     def condition(filter_name, table, column_name, valid_fields, filter_value)
-      case filter_name
-
-        # comparisons
-        when :eq, :equal
-          compose_eq(table, column_name, valid_fields, filter_value)
-        when :not_eq, :not_equal
-          compose_not_eq(table, column_name, valid_fields, filter_value)
-        when :lt, :less_than
-          compose_lt(table, column_name, valid_fields, filter_value)
-        when :not_lt, :not_less_than
-          compose_not_lt(table, column_name, valid_fields, filter_value)
-        when :gt, :greater_than
-          compose_gt(table, column_name, valid_fields, filter_value)
-        when :not_gt, :not_greater_than
-          compose_not_gt(table, column_name, valid_fields, filter_value)
-        when :lteq, :less_than_or_equal
-          compose_lteq(table, column_name, valid_fields, filter_value)
-        when :not_lteq, :not_less_than_or_equal
-          compose_not_lteq(table, column_name, valid_fields, filter_value)
-        when :gteq, :greater_than_or_equal
-          compose_gteq(table, column_name, valid_fields, filter_value)
-        when :not_gteq, :not_greater_than_or_equal
-          compose_not_gteq(table, column_name, valid_fields, filter_value)
-
-        # subsets
-        when :range, :in_range
-          compose_range_options(table, column_name, valid_fields, filter_value)
-        when :not_range, :not_in_range
-          compose_not_range_options(table, column_name, valid_fields, filter_value)
-        when :in
-          compose_in(table, column_name, valid_fields, filter_value)
-        when :not_in
-          compose_not_in(table, column_name, valid_fields, filter_value)
-        when :contains, :contain
-          compose_contains(table, column_name, valid_fields, filter_value)
-        when :not_contains, :not_contain, :does_not_contain
-          compose_not_contains(table, column_name, valid_fields, filter_value)
-        when :starts_with, :start_with
-          compose_starts_with(table, column_name, valid_fields, filter_value)
-        when :not_starts_with, :not_start_with, :does_not_start_with
-          compose_not_starts_with(table, column_name, valid_fields, filter_value)
-        when :ends_with, :end_with
-          compose_ends_with(table, column_name, valid_fields, filter_value)
-        when :not_ends_with, :not_end_with, :does_not_end_with
-          compose_not_ends_with(table, column_name, valid_fields, filter_value)
-        when :regex, :regex_match, :matches
-          compose_regex(table, column_name, valid_fields, filter_value)
-        when :not_regex, :not_regex_match, :does_not_match, :not_match
-          compose_not_regex(table, column_name, valid_fields, filter_value)
-
-        # unknown
-        else
-          fail ClearlyQuery::FilterArgumentError.new("unrecognised condition' #{filter_name}'")
-      end
+      validate_table_column(table, column_name, valid_fields)
+      condition_node(filter_name, table[column_name], filter_value)
     end
 
     # Build a condition.
@@ -411,9 +339,9 @@ OR
 
         # subsets
         when :range, :in_range
-          compose_range_options_node(node, filter_value)
+          compose_range_node(node, filter_value)
         when :not_range, :not_in_range
-          compose_not_range_options_node(node, filter_value)
+          compose_not_range_node(node, filter_value)
         when :in
           compose_in_node(node, filter_value)
         when :not_in
@@ -434,6 +362,10 @@ OR
           compose_regex_node(node, filter_value)
         when :not_regex, :not_regex_match, :does_not_match, :not_match
           compose_not_regex_node(node, filter_value)
+
+        # special
+        when :null, :is_null
+          compose_null_node(node, filter_value)
 
         # unknown
         else

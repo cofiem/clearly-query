@@ -12,7 +12,9 @@ class Customer < ActiveRecord::Base
             mappings: [
                 {
                     name: :title,
-                    value: ClearlyQuery::Helper.string_concat(Customer.arel_table[:name], ' title')
+                    value: ClearlyQuery::Helper.string_concat(
+                        Customer.arel_table[:name],
+                        Arel::Nodes.build_quoted(' title'))
                 }
             ]
         },
@@ -40,8 +42,7 @@ class Customer < ActiveRecord::Base
                                             {
                                                 join: Part,
                                                 on: Part.arel_table[:id].eq(Arel::Table.new(:products_parts)[:part_id]),
-                                                available: true,
-
+                                                available: true
                                             }
                                         ]
                                     }
