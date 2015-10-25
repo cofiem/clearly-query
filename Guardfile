@@ -16,8 +16,6 @@ guard :rspec, cmd: 'bin/rspec' do
 
 end
 
-guard 'yard' do
-  watch(%r{app/.+\.rb})
+guard :yard, cmd: 'bin/yard doc' do
   watch(%r{lib/.+\.rb})
-  watch(%r{ext/.+\.c})
 end

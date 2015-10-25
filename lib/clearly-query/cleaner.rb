@@ -4,7 +4,9 @@ module ClearlyQuery
   class Cleaner
 
     # Create a cleaner for a filter hash.
+    # @return [ClearlyQuery::Cleaner]
     def initialize
+      self
     end
 
     # Get the cleaned filter hash.

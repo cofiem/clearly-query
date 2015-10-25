@@ -8,11 +8,32 @@ module ClearlyQuery
     include ClearlyQuery::Compose::Subset
     include ClearlyQuery::Validate
 
-    attr_reader :model, :table,
-                :all_fields, :text_fields, :mapped_fields,
-                :associations, :defaults
+
+    # @return [ActiveRecord::Base] active record model for this definition
+    attr_reader :model
+
+    # @return [Arel::Table] arel table for this definition
+    attr_reader :table
+
+    # @return [Array<Symbol>] available model fields
+    attr_reader :all_fields
+
+    # @return [Array<Symbol>] available text model fields
+    attr_reader :text_fields
+
+    # @return [Array<Hash>] mapped model fields
+    attr_reader  :mapped_fields
+
+    # @return [Array<Hash>] model associations
+    attr_reader :associations
+
+    # @return [Hash] defaults
+    attr_reader :defaults
 
     # Create a Definition
+    # @param [ActiveRecord::Base] model
+    # @param [Hash] hash
+    # @return [ClearlyQuery::Definition]
     def initialize(model, hash)
       validate_model(model)
       validate_definition(hash)
@@ -30,6 +51,8 @@ module ClearlyQuery
 
       @associations = build_associations(hash[:associations], @table)
       @defaults = hash[:defaults]
+
+      self
     end
 
     # Build table field from field symbol.

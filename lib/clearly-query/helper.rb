@@ -5,6 +5,8 @@ module ClearlyQuery
     class << self
 
       # Concatenate one or more strings
+      # @param [Array<String>] args strings to concatenate
+      # @return [Arel::Nodes::Node]
       def string_concat(*args)
         adapter = ActiveRecord::Base.connection.adapter_name.underscore.downcase
 
@@ -22,6 +24,9 @@ module ClearlyQuery
       end
 
       # Concatenate strings using an operator
+      # @param [Object] operator infix operator
+      # @param [Array<String>] args strings to concatenate
+      # @return [Arel::Nodes::Node]
       def string_concat_infix(operator, *args)
         if args.blank? || args.size < 2
           fail ArgumentError, "string concatenation requires operator and two or more arguments, given '#{args.size}'"

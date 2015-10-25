@@ -11,6 +11,7 @@ Uses [Arel](https://github.com/rails/arel) and [ActiveRecord](https://github.com
 [![Code Climate](https://codeclimate.com/github/cofiem/clearly-query/badges/gpa.svg)](https://codeclimate.com/github/cofiem/clearly-query)
 [![Test Coverage](https://codeclimate.com/github/cofiem/clearly-query/badges/coverage.svg)](https://codeclimate.com/github/cofiem/clearly-query/coverage)
 [![Documentation Status](https://inch-ci.org/github/cofiem/clearly-query.svg?branch=master)](https://inch-ci.org/github/cofiem/clearly-query)
+[![Documentation](https://img.shields.io/badge/docs-rdoc.info-blue.svg)](http://www.rubydoc.info/github/cofiem/clearly-query)
 
 ## Installation
 

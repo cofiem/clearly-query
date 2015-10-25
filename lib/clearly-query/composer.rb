@@ -36,25 +36,28 @@ module ClearlyQuery
         :regex
     ]
 
+    # @return [Array<ClearlyQuery::Definition>] available definitions
     attr_reader :definitions
 
     # Create an instance of Composer using a set of model query spec definitions.
     # @param [Array<ClearlyQuery::Definition>] definitions
-    # @return [void]
+    # @return [ClearlyQuery::Composer]
     def initialize(definitions)
       validate_array(definitions)
       validate_array_items(definitions)
       @definitions = definitions
+      self
     end
 
     # Create an instance of Composer from all ActiveRecord models.
     # @return [ClearlyQuery::Composer]
     def self.from_active_record
-      definitions = ActiveRecord::Base.descendants
-          .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
-          .reject { |d| d.name.include?('HABTM_') }
-          .sort { |a, b| a.name <=> b.name }
-          .map{ |d| Definition.new(d, d.clearly_query_def)}
+      definitions =
+          ActiveRecord::Base.descendants
+              .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
+              .reject { |d| d.name.include?('HABTM_') }
+              .sort { |a, b| a.name <=> b.name }
+              .map { |d| Definition.new(d, d.clearly_query_def) }
       Composer.new(definitions)
     end
 
