@@ -214,7 +214,7 @@ module Clearly
 
           # add joins to get access to the relevant tables
           # using the associations from the model definition being used for the subquery
-          joins, match = current_definition.build_joins(model, definition.associations)
+          joins, _ = current_definition.build_joins(model, definition.associations)
 
           joins.each do |j|
             join_table = j[:join]
