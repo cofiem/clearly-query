@@ -34,7 +34,7 @@ There are two main public classes in this gem.
 The Definition class makes use of a settings declared in a model.
 The Composer converts a hash of options into an Arel query.
 
-### [Clearly::Query::Definition](./lib/clearly-query/definition.rb)
+### [Clearly::Query::Definition](./lib/clearly/query/definition.rb)
 
 Contains the query specification for ActiveRecord models.
 
