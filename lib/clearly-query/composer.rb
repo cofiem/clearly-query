@@ -48,6 +48,7 @@ module ClearlyQuery
     # @return [ClearlyQuery::Composer]
     def initialize(definitions)
       validate_array(definitions)
+      validate_definition_instance(definitions[0])
       validate_array_items(definitions)
       @definitions = definitions
       self
@@ -142,11 +143,8 @@ module ClearlyQuery
 
             #fail CustomErrors::FilterArgumentError.new("'Not' must have a single filter, got #{hash.size}.", {hash: filter_hash}) if result.size != 1
 
-            if result.respond_to?(:map)
-              negated_conditions = result.map { |c| compose_not(c) }
-            else
-              negated_conditions = [compose_not(result)]
-            end
+            negated_conditions = [result].flatten.map { |c| compose_not(c) }
+
             negated_conditions
 
           when *definition.all_fields.dup.push(/\./)
@@ -283,13 +281,11 @@ module ClearlyQuery
       combined_conditions = nil
 
       conditions.each do |condition|
-
         if combined_conditions.blank?
           combined_conditions = condition
         else
           combined_conditions = combine(combiner, combined_conditions, condition)
         end
-
       end
 
       combined_conditions

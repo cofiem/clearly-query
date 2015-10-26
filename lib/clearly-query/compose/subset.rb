@@ -89,7 +89,8 @@ module ClearlyQuery
       # @return [Arel::Nodes::Node] condition
       def compose_regex_node(node, value)
         validate_node_or_attribute(node)
-        Arel::Nodes::Regexp.new(node, Arel::Nodes.build_quoted(value))
+        sanitized_value = sanitize_similar_to_value(value)
+        Arel::Nodes::Regexp.new(node, Arel::Nodes.build_quoted(sanitized_value))
       end
 
       # Create negated regular expression condition.
@@ -99,7 +100,8 @@ module ClearlyQuery
       # @return [Arel::Nodes::Node] condition
       def compose_not_regex_node(node, value)
         validate_node_or_attribute(node)
-        Arel::Nodes::NotRegexp.new(node, Arel::Nodes.build_quoted(value))
+        sanitized_value = sanitize_similar_to_value(value)
+        Arel::Nodes::NotRegexp.new(node, Arel::Nodes.build_quoted(sanitized_value))
       end
 
     end

@@ -3,22 +3,6 @@ module ClearlyQuery
   # Provides common validations for composing queries.
   module Validate
 
-    # validate an integer
-    # @param [Object] value
-    # @param [Integer] min
-    # @param [Integer] max
-    # @return [void]
-    def validate_integer(value, min = nil, max = nil)
-      validate_not_blank(value)
-      fail ClearlyQuery::FilterArgumentError, "value must be an integer, got '#{value}'" if value != value.to_i
-
-      value_i = value.to_i
-
-      fail ClearlyQuery::FilterArgumentError, "value must be '#{min}' or greater, got '#{value_i}'" if !min.blank? && value_i < min
-      fail ClearlyQuery::FilterArgumentError, "value must be '#{max}' or less, got '#{value_i}'" if !max.blank? && value_i > max
-    end
-
-
     # Validate query, table, and column values.
     # @param [Arel::Query] query
     # @param [Arel::Table] table
@@ -86,14 +70,6 @@ module ClearlyQuery
       if !condition.is_a?(Arel::Nodes::Node) && !condition.is_a?(String)
         fail ClearlyQuery::FilterArgumentError, "condition must be Arel::Nodes::Node or String, got '#{condition}'"
       end
-    end
-
-    # Validate projection value.
-    # @param [Arel::Attributes::Attribute] projection
-    # @raise [FilterArgumentError] if projection is not an Arel::Attributes::Attribute
-    # @return [void]
-    def validate_projection(projection)
-      fail ClearlyQuery::FilterArgumentError, "condition must be Arel::Attributes::Attribute, got '#{projection}'" unless projection.is_a?(Arel::Attributes::Attribute)
     end
 
     # Validate value is a node or attribute
@@ -200,22 +176,6 @@ module ClearlyQuery
       fail ClearlyQuery::FilterArgumentError, "value must be a boolean, got '#{value}'" if !value.is_a?(TrueClass) && !value.is_a?(FalseClass)
     end
 
-    # Validate Extract field for timestamp, time, interval, date.
-    # @param [String] value
-    # @raise [FilterArgumentError] if value is not a valid field value.
-    # @return [void]
-    def validate_projection_extract(value)
-      valid = [
-          :century, :day, :decade, :dow, :epoch, :hour,
-          :isodow, :isoyear, :microseconds, :millennium,
-          :milliseconds, :minute, :month, :quarter,
-          :second, :timezone, :timezone_hour, :timezone_minute,
-          :week, :year
-      ]
-      validate_not_blank(value)
-      fail ClearlyQuery::FilterArgumentError, "value for extract must be in '#{valid}', got '#{value}'" unless valid.include?(value.downcase.to_sym)
-    end
-
     # Escape wildcards in like value..
     # @param [String] value
     # @return [String] sanitized value
@@ -231,19 +191,27 @@ module ClearlyQuery
       value.gsub(/[\\_%\|\*\+\?\{\}\(\)\[\]]/) { |x| "\\#{x}" }
     end
 
-    # Remove all except 0-9, a-z, _ from projection alias
-    # @param [String] value
-    # @return [String] sanitized value
-    def sanitize_projection_alias(value)
-      value.gsub(/[^0-9a-zA-Z_]/) { |_| '' }
-    end
-
     # Create LIKE syntax.
     # @param [String] value
     # @param [Hash] options
     # @return [String]
     def like_syntax(value, options = {start: false, end: false})
       "#{options[:start] ? '%' : ''}#{sanitize_like_value(value)}#{options[:end] ? '%' : ''}"
+    end
+
+    # validate an integer
+    # @param [Object] value
+    # @param [Integer] min
+    # @param [Integer] max
+    # @return [void]
+    def validate_integer(value, min = nil, max = nil)
+      validate_not_blank(value)
+      fail ClearlyQuery::FilterArgumentError, "value must be an integer, got '#{value}'" if value != value.to_i
+
+      value_i = value.to_i
+
+      fail ClearlyQuery::FilterArgumentError, "value must be '#{min}' or greater, got '#{value_i}'" if !min.blank? && value_i < min
+      fail ClearlyQuery::FilterArgumentError, "value must be '#{max}' or less, got '#{value_i}'" if !max.blank? && value_i > max
     end
 
     # Check that value is a float.
