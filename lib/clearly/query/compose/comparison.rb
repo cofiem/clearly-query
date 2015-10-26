@@ -1,11 +1,12 @@
-module ClearlyQuery
+module Clearly
+  module Query
 
   # Arel helper methods used by Composer and Definition
   module Compose
 
     # Provides comparisons for composing queries.
     module Comparison
-      include ClearlyQuery::Validate
+      include Clearly::Query::Validate
 
       private
 
@@ -97,4 +98,5 @@ module ClearlyQuery
 
     end
   end
+end
 end

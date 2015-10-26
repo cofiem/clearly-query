@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-describe ClearlyQuery::Cleaner do
+describe Clearly::Query::Cleaner do
   include_context 'shared_setup'
 
   it 'can be instantiated' do
-    ClearlyQuery::Cleaner.new
+    Clearly::Query::Cleaner.new
   end
 
   context 'produces the expected result when cleaning a hash that' do

@@ -13,7 +13,7 @@ require 'zonebie'
 
 include ActiveRecord::Tasks
 
-require 'clearly-query'
+require 'clearly/query'
 
 # include supporting files
 Dir[File.join(File.dirname(__FILE__), 'support', '**', '*.rb')].each { |file| require file }

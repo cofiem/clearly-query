@@ -12,7 +12,7 @@ class Part < ActiveRecord::Base
             mappings: [
                 {
                     name: :title,
-                    value: ClearlyQuery::Helper.string_concat(
+                    value: Clearly::Query::Helper.string_concat(
                         Part.arel_table[:code],
                         Arel::Nodes.build_quoted(' '),
                         Part.arel_table[:manufacturer])

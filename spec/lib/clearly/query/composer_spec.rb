@@ -1,20 +1,20 @@
 require 'spec_helper'
 
-describe ClearlyQuery::Composer do
+describe Clearly::Query::Composer do
   include_context 'shared_setup'
 
   it 'can be instantiated' do
-    ClearlyQuery::Composer.new(all_defs)
+    Clearly::Query::Composer.new(all_defs)
   end
 
   it 'matches test setup' do
-    composer_definitions = ClearlyQuery::Composer.from_active_record.definitions.map { |d| d.model.name }
+    composer_definitions = Clearly::Query::Composer.from_active_record.definitions.map { |d| d.model.name }
     test_definitions = all_defs.map { |d| d.model.name }
     expect(test_definitions).to eq(composer_definitions)
   end
 
   it 'finds all active record classes' do
-    definitions = ClearlyQuery::Composer.from_active_record.definitions.map { |d| d.model.name }
+    definitions = Clearly::Query::Composer.from_active_record.definitions.map { |d| d.model.name }
     expect([Customer.name, Order.name, Part.name, Product.name]).to eq(definitions)
   end
 
@@ -24,7 +24,7 @@ describe ClearlyQuery::Composer do
         query = cleaner.do({})
         expect {
           composer.query(Customer, query)
-        }.to raise_error(ClearlyQuery::FilterArgumentError, "filter hash must have at least 1 entry, got '0'")
+        }.to raise_error(Clearly::Query::FilterArgumentError, "filter hash must have at least 1 entry, got '0'")
       end
 
       it 'uses a regex operator using sqlite' do
@@ -45,7 +45,7 @@ describe ClearlyQuery::Composer do
                             }
                         }
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "unrecognised combiner or field name 'not_a_real_filter'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "unrecognised combiner or field name 'not_a_real_filter'")
         end
 
         it 'has only 1 entry' do
@@ -57,7 +57,7 @@ describe ClearlyQuery::Composer do
                             }
                         }
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "combiner 'or' must have at least 2 entries, got '1'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "combiner 'or' must have at least 2 entries, got '1'")
         end
 
         it 'has not with no entries' do
@@ -66,7 +66,7 @@ describe ClearlyQuery::Composer do
                         not: {
                         }
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "filter hash must have at least 1 entry, got '0'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "filter hash must have at least 1 entry, got '0'")
         end
 
         it 'has or with no entries' do
@@ -75,7 +75,7 @@ describe ClearlyQuery::Composer do
                         or: {
                         }
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "filter hash must have at least 1 entry, got '0'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "filter hash must have at least 1 entry, got '0'")
         end
 
         it 'has not with more than one field' do
@@ -118,7 +118,7 @@ describe ClearlyQuery::Composer do
                             }
                         }
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "unrecognised combiner or field name 'not_a_valid_combiner'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "unrecognised combiner or field name 'not_a_valid_combiner'")
         end
 
         it "has a range missing 'from'" do
@@ -132,7 +132,7 @@ describe ClearlyQuery::Composer do
                             }
                         }
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "range filter missing 'from'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "range filter missing 'from'")
         end
 
         it "has a range missing 'to'" do
@@ -146,7 +146,7 @@ describe ClearlyQuery::Composer do
                             }
                         }
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "range filter missing 'to'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "range filter missing 'to'")
         end
 
         it 'has a range with from/to and interval' do
@@ -161,7 +161,7 @@ describe ClearlyQuery::Composer do
                                 }
                             }}
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "range filter must use either ('from' and 'to') or ('interval'), not both")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "range filter must use either ('from' and 'to') or ('interval'), not both")
         end
 
         it 'has a range with no recognised properties' do
@@ -175,7 +175,7 @@ describe ClearlyQuery::Composer do
                             }
                         }
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "range filter did not contain ('from' and 'to') or ('interval'), got '{:ignored_in_a_range=>\"[34,34]\"}'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "range filter did not contain ('from' and 'to') or ('interval'), got '{:ignored_in_a_range=>\"[34,34]\"}'")
         end
 
         it 'has a property that has no filters' do
@@ -186,7 +186,7 @@ describe ClearlyQuery::Composer do
                             }
                         }
                     })
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "filter hash must have at least 1 entry, got '0'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "filter hash must have at least 1 entry, got '0'")
         end
 
         it 'occurs with a deformed \'in\' filter' do
@@ -195,7 +195,7 @@ describe ClearlyQuery::Composer do
           expect {
             query = cleaner.do(filter_params)
             composer.query(Customer, query)
-          }.to raise_error(ClearlyQuery::FilterArgumentError, 'array values cannot be hashes')
+          }.to raise_error(Clearly::Query::FilterArgumentError, 'array values cannot be hashes')
         end
 
         it 'occurs for an invalid range filter' do
@@ -203,7 +203,7 @@ describe ClearlyQuery::Composer do
           expect {
             query = cleaner.do(filter_params)
             composer.query(Customer, query)
-          }.to raise_error(ClearlyQuery::FilterArgumentError, "range filter must be {'from': 'value', 'to': 'value'} or {'interval': '(|[.*,.*]|)'} got '(5,6)'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "range filter must be {'from': 'value', 'to': 'value'} or {'interval': '(|[.*,.*]|)'} got '(5,6)'")
         end
 
 
@@ -307,7 +307,7 @@ describe ClearlyQuery::Composer do
 
         not_implemented_sqlite = [:regex]
         operator_hash = {}
-        ClearlyQuery::Composer::OPERATORS
+        Clearly::Query::Composer::OPERATORS
             .reject { |o| not_implemented_sqlite.include?(o) }
             .each do |o|
           operator_hash[o] =

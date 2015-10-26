@@ -13,7 +13,7 @@ class Order < ActiveRecord::Base
             mappings: [
                 {
                     name: :title,
-                    value: ClearlyQuery::Helper.string_concat(
+                    value: Clearly::Query::Helper.string_concat(
                         Customer.arel_table
                             .where(Customer.arel_table[:id].eq(Order.arel_table[:customer_id]))
                             .project(Customer.arel_table[:name]),

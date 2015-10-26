@@ -12,7 +12,7 @@ class Customer < ActiveRecord::Base
             mappings: [
                 {
                     name: :title,
-                    value: ClearlyQuery::Helper.string_concat(
+                    value: Clearly::Query::Helper.string_concat(
                         Customer.arel_table[:name],
                         Arel::Nodes.build_quoted(' title'))
                 }
