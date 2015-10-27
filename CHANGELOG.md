@@ -30,7 +30,3 @@ bug fixes
 
 ### Security
 vulnerabilities or other problems that should be highlighted
-
-
-
-
