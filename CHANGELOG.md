@@ -4,10 +4,17 @@ Non-trivial changes will be documented here. This project adheres to [Semantic V
 
 ## Unreleased
 
+## 2015-10-27 - First release [0.2.0](https://github.com/cofiem/clearly-query/releases/tag/0.2.0)
+
+### Added
+
+ - Transported hash filter modules and classes from [baw-server](https://github.com/QutBioacoustics/baw-server)
+  - Created change log
+
+## Change log categories
+
 ### Added
 new features
-
- - Created change log.
 
 ### Changed
 changes in existing functionality
@@ -23,5 +30,7 @@ bug fixes
 
 ### Security
 vulnerabilities or other problems that should be highlighted
+
+
 
 
