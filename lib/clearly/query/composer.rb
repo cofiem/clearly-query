@@ -3,43 +3,8 @@ module Clearly
 
     # Class that composes a query from a filter hash.
     class Composer
-      include Clearly::Query::Compose::Comparison
-      include Clearly::Query::Compose::Core
-      include Clearly::Query::Compose::Range
-      include Clearly::Query::Compose::Subset
-      include Clearly::Query::Compose::Special
+      include Clearly::Query::Compose::Conditions
       include Clearly::Query::Validate
-
-      # filter operators
-      OPERATORS = [
-          # comparison
-          :eq, :equal,
-          :not_eq, :not_equal,
-          :lt, :less_than,
-          :not_lt, :not_less_than,
-          :gt, :greater_than,
-          :not_gt, :not_greater_than,
-          :lteq, :less_than_or_equal,
-          :not_lteq, :not_less_than_or_equal,
-          :gteq, :greater_than_or_equal,
-          :not_gteq, :not_greater_than_or_equal,
-
-          # subset
-          :range, :in_range,
-          :not_range, :not_in_range,
-          :in,
-          :not_in,
-          :contains, :contain,
-          :not_contains, :not_contain, :does_not_contain,
-          :starts_with, :start_with,
-          :not_starts_with, :not_start_with, :does_not_start_with,
-          :ends_with, :end_with,
-          :not_ends_with, :not_end_with, :does_not_end_with,
-          :regex,
-
-          # special
-          :null, :is_null
-      ]
 
       # @return [Array<Clearly::Query::Definition>] available definitions
       attr_reader :definitions
@@ -63,7 +28,7 @@ module Clearly
                 .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
                 .reject { |d| d.name.include?('HABTM_') }
                 .sort { |a, b| a.name <=> b.name }
-                .map { |d| Definition.new(d, d.clearly_query_def) }
+                .map { |d| Clearly::Query::Definition.new(d, d.clearly_query_def) }
         Composer.new(definitions)
       end
 
@@ -86,7 +51,7 @@ module Clearly
         validate_table(table)
         matches = @definitions.select { |definition| definition.table.name == table.name }
         if matches.size != 1
-          fail ArgumentError, "exactly one definition must match, found '#{matches.size}'"
+          fail Clearly::Query::FilterArgumentError, "exactly one definition must match, found '#{matches.size}'"
         end
 
         matches.first
@@ -133,7 +98,7 @@ module Clearly
               combiner = primary
               filter_hash = secondary
               result = parse_filter(definition, filter_hash)
-              combine_all(combiner, result)
+              condition_combine(combiner, result)
             when :not
               #combiner = primary
               filter_hash = secondary
@@ -168,7 +133,7 @@ module Clearly
               custom_field = definition.build_custom_field(column_name)
 
               if custom_field.blank?
-                condition(filter_name, table, column_name, valid_fields, filter_value)
+                condition_components(filter_name, table, column_name, valid_fields, filter_value)
               else
                 condition_node(filter_name, custom_field, filter_value)
               end
@@ -255,119 +220,6 @@ module Clearly
         validate_query(query)
         validate_condition(condition)
         query.where(condition)
-      end
-
-      # Combine two conditions.
-      # @param [Symbol] combiner
-      # @param [Arel::Nodes::Node] condition1
-      # @param [Arel::Nodes::Node] condition2
-      # @return [Arel::Nodes::Node] condition
-      def combine(combiner, condition1, condition2)
-        case combiner
-          when :and
-            compose_and(condition1, condition2)
-          when :or
-            compose_or(condition1, condition2)
-          else
-            fail Clearly::Query::FilterArgumentError.new("unrecognised combiner '#{combiner}'")
-        end
-      end
-
-      # Combine multiple conditions.
-      # @param [Symbol] combiner
-      # @param [Array<Arel::Nodes::Node>] conditions
-      # @return [Arel::Nodes::Node] condition
-      def combine_all(combiner, conditions)
-        fail Clearly::Query::FilterArgumentError.new("combiner '#{combiner}' must have at least 2 entries, got '#{conditions.size}'") if conditions.blank? || conditions.size < 2
-        combined_conditions = nil
-
-        conditions.each do |condition|
-          if combined_conditions.blank?
-            combined_conditions = condition
-          else
-            combined_conditions = combine(combiner, combined_conditions, condition)
-          end
-        end
-
-        combined_conditions
-      end
-
-      # Build a condition.
-      # @param [Symbol] filter_name
-      # @param [Arel::Table] table
-      # @param [Symbol] column_name
-      # @param [Array<symbol>] valid_fields
-      # @param [Object] filter_value
-      # @return [Arel::Nodes::Node] condition
-      def condition(filter_name, table, column_name, valid_fields, filter_value)
-        validate_table_column(table, column_name, valid_fields)
-        condition_node(filter_name, table[column_name], filter_value)
-      end
-
-      # Build a condition.
-      # @param [Symbol] filter_name
-      # @param [Arel::Nodes::Node, Arel::Attributes::Attribute, String] node
-      # @param [Object] filter_value
-      # @return [Arel::Nodes::Node] condition
-      def condition_node(filter_name, node, filter_value)
-        case filter_name
-
-          # comparisons
-          when :eq, :equal
-            compose_eq_node(node, filter_value)
-          when :not_eq, :not_equal
-            compose_not_eq_node(node, filter_value)
-          when :lt, :less_than
-            compose_lt_node(node, filter_value)
-          when :not_lt, :not_less_than
-            compose_not_lt_node(node, filter_value)
-          when :gt, :greater_than
-            compose_gt_node(node, filter_value)
-          when :not_gt, :not_greater_than
-            compose_not_gt_node(node, filter_value)
-          when :lteq, :less_than_or_equal
-            compose_lteq_node(node, filter_value)
-          when :not_lteq, :not_less_than_or_equal
-            compose_not_lteq_node(node, filter_value)
-          when :gteq, :greater_than_or_equal
-            compose_gteq_node(node, filter_value)
-          when :not_gteq, :not_greater_than_or_equal
-            compose_not_gteq_node(node, filter_value)
-
-          # subsets
-          when :range, :in_range
-            compose_range_node(node, filter_value)
-          when :not_range, :not_in_range
-            compose_not_range_node(node, filter_value)
-          when :in
-            compose_in_node(node, filter_value)
-          when :not_in
-            compose_not_in_node(node, filter_value)
-          when :contains, :contain
-            compose_contains_node(node, filter_value)
-          when :not_contains, :not_contain, :does_not_contain
-            compose_not_contains_node(node, filter_value)
-          when :starts_with, :start_with
-            compose_starts_with_node(node, filter_value)
-          when :not_starts_with, :not_start_with, :does_not_start_with
-            compose_not_starts_with_node(node, filter_value)
-          when :ends_with, :end_with
-            compose_ends_with_node(node, filter_value)
-          when :not_ends_with, :not_end_with, :does_not_end_with
-            compose_not_ends_with_node(node, filter_value)
-          when :regex, :regex_match, :matches
-            compose_regex_node(node, filter_value)
-          when :not_regex, :not_regex_match, :does_not_match, :not_match
-            compose_not_regex_node(node, filter_value)
-
-          # special
-          when :null, :is_null
-            compose_null_node(node, filter_value)
-
-          # unknown
-          else
-            fail Clearly::Query::FilterArgumentError.new("unrecognised condition node '#{filter_name}'")
-        end
       end
 
     end

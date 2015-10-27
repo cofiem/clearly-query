@@ -68,8 +68,9 @@ module Clearly
         # @return [Arel::Nodes::Node] condition
         def compose_in_node(node, values)
           validate_node_or_attribute(node)
+          values = [values].flatten
           validate_array(values)
-          validate_array_items(values) if values.is_a?(Array)
+          validate_array_items(values)
           node.in(values)
         end
 
@@ -79,8 +80,9 @@ module Clearly
         # @return [Arel::Nodes::Node] condition
         def compose_not_in_node(node, values)
           validate_node_or_attribute(node)
+          values = [values].flatten
           validate_array(values)
-          validate_array_items(values) if values.is_a?(Array)
+          validate_array_items(values)
           node.not_in(values)
         end
 

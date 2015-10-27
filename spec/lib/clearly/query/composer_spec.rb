@@ -57,7 +57,7 @@ describe Clearly::Query::Composer do
                             }
                         }
                     })
-          }.to raise_error(Clearly::Query::FilterArgumentError, "combiner 'or' must have at least 2 entries, got '1'")
+          }.to raise_error(Clearly::Query::FilterArgumentError, "must have at least 2 conditions, got '1'")
         end
 
         it 'has not with no entries' do
@@ -189,8 +189,13 @@ describe Clearly::Query::Composer do
           }.to raise_error(Clearly::Query::FilterArgumentError, "filter hash must have at least 1 entry, got '0'")
         end
 
-        it 'occurs with a deformed \'in\' filter' do
-          filter_params = {'name' => {'in' => [{'blah1' => nil, 'blah2' => nil, 'blah3' => nil, 'id' => 508, 'blah4' => true, 'name' => 'blah blah', 'blah5' => [397], 'links' => ['blah']}, {'blah1' => nil, 'blah2' => nil, 'blah3' => nil, 'id' => 400, 'blah4' => true, 'name' => 'blah blah', 'blah5' => [397], 'links' => ['blah']}]}}
+        it "occurs with a deformed 'in' filter" do
+          filter_params = {'name' => {'in' => [
+              {'blah1' => nil, 'blah2' => nil, 'blah3' => nil, 'id' => 508, 'blah4' => true, 'name' => 'blah blah',
+               'blah5' => [397], 'links' => ['blah']},
+              {'blah1' => nil, 'blah2' => nil, 'blah3' => nil, 'id' => 400, 'blah4' => true, 'name' => 'blah blah',
+               'blah5' => [397], 'links' => ['blah']}
+          ]}}
 
           expect {
             query = cleaner.do(filter_params)
@@ -306,24 +311,29 @@ describe Clearly::Query::Composer do
         column = '"products"."name"'
 
         not_implemented_sqlite = [:regex]
+        skip_in_test = [:and, :or, :not]
         operator_hash = {}
-        Clearly::Query::Composer::OPERATORS
+        Clearly::Query::Compose::Conditions::OPERATORS
             .reject { |o| not_implemented_sqlite.include?(o) }
+            .reject { |o| skip_in_test.include?(o) }
             .each do |o|
+          op_value_mod = "#{operator_value}_#{o.to_s}"
+          operator_value1 = "#{op_value_mod}_1"
+          operator_value2 = "#{op_value_mod}_2"
           operator_hash[o] =
               case o
                 when :range, :not_range, :not_in_range
-                  {from: 'test1', to: 'test2'}
+                  {from: operator_value1, to: operator_value2}
                 when :in_range
-                  {interval: '(test1,test2]'}
-                when :in, :not_in
-                  ['test']
+                  {interval: "(#{operator_value1},#{operator_value2}]"}
+                when :in, :not_in, :is_in, :in_not_in
+                  [op_value_mod]
                 when :null
                   true
                 when :is_null
                   false
                 else
-                  'test'
+                  op_value_mod
               end
         end
 
