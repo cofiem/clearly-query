@@ -4,6 +4,12 @@ Non-trivial changes will be documented here. This project adheres to [Semantic V
 
 ## Unreleased
 
+### Added
+ - new DFS graph traversal for calculating joins between tables
+
+### Changed
+ - composer and definition functionality redistributed to be more obvious and enable simpler methods
+
 ## 2015-10-27 - First release [0.2.0](https://github.com/cofiem/clearly-query/releases/tag/0.2.0)
 
 ### Added
