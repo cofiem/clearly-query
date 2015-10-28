@@ -17,6 +17,7 @@ module Clearly
         validate_definition_instance(definitions[0])
         validate_array_items(definitions)
         @definitions = definitions
+        @table_names = definitions.map { |d| d.table.name }
         self
       end
 
@@ -24,10 +25,10 @@ module Clearly
       # @return [Clearly::Query::Composer]
       def self.from_active_record
         models = ActiveRecord::Base
-                     .descendants
-                     .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
-                     .sort { |a, b| a.name <=> b.name }
-                     .uniq { |d| d.arel_table.name }
+            .descendants
+            .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
+            .sort { |a, b| a.name <=> b.name }
+            .uniq { |d| d.arel_table.name }
 
         definitions = models.map do |d|
           if d.name.include?('HABTM_')
@@ -87,8 +88,9 @@ module Clearly
         end
 
         logical_operators = Clearly::Query::Compose::Conditions::OPERATORS_LOGICAL
-        standard_fields = definition.all_fields
+
         mapped_fields = definition.field_mappings.keys
+        standard_fields = definition.all_fields - mapped_fields
 
         conditions = []
 
@@ -107,10 +109,12 @@ module Clearly
           field_conditions = parse_mapped_field(definition, query_key, query_value)
           conditions.push(*field_conditions)
 
-        else
+        elsif @table_names.any? { |tn| query_key.to_s.downcase.start_with?(tn) }
           # finally deal with fields from other tables
           field_conditions = parse_custom(definition, query_key, query_value)
-          conditions.push(*field_conditions)
+          conditions.push(field_conditions)
+        else
+          fail Clearly::Query::QueryArgumentError.new("unrecognised operator or field '#{query_key}'")
         end
 
         conditions
@@ -163,10 +167,10 @@ module Clearly
         other_model = other_table.to_s.classify.constantize
         other_field = field[(dot_index + 1)..field.length].to_sym
 
-        table_names = definition.joins.map { |a| a[:join].table_name.to_sym }
+        table_names = definition.associations_flat.map { |a| a[:join].table_name.to_sym }
         validate_name(other_table, table_names)
 
-        models = definition.joins.map { |a| a[:join] }
+        models = definition.associations_flat.map { |a| a[:join] }
         validate_association(other_model, models)
 
         other_definition = select_definition_from_model(other_model)
@@ -175,11 +179,22 @@ module Clearly
         subquery(definition, other_definition, conditions)
       end
 
+      # Parse a mapped field
+      # @param [Clearly::Query::Definition] definition
+      # @param [Symbol] field mapped field
+      # @param [Hash] value
+      # @return [Array<Arel::Nodes::Node>]
       def parse_mapped_field(definition, field, value)
-
+        validate_definition_instance(definition)
+        mapping = definition.get_field_mapping(field)
+        validate_node_or_attribute(mapping)
+        validate_hash(value)
+        value.map do |operator, operation_value|
+          condition_node(operator, mapping, operation_value)
+        end
       end
 
-      # Build a subquery
+      # Build a subquery restricting definition to conditions on other_definition.
       # @param [Clearly::Query::Definition] definition
       # @param [Clearly::Query::Definition] other_definition
       # @param [Array<Arel::Nodes::Node>] conditions
@@ -189,42 +204,63 @@ module Clearly
         validate_definition_instance(other_definition)
         [conditions].flatten.each { |c| validate_node_or_attribute(c) }
 
-        table = definition.table
-        model = definition.model
-        joins = definition.joins
+        current_model = definition.model
+        current_table = definition.table
+        current_joins = definition.joins
+
+        other_table = other_definition.table
+        other_model = other_definition.model
+        other_joins = other_definition.joins
+
+        # build an exist subquery to apply conditions that
+        # refer to another table
+
+        subquery = other_definition.table
+
+        # add conditions to subquery
+        [conditions].flatten.each do |c|
+          subquery = subquery.where(c)
+        end
+
+        # add joins that provide other table access to current table
 
 
-          # build an exist subquery to apply conditions that
-          # refer to another table
-
-          subquery = other_definition.table
-
-          # add conditions to subquery
-          [conditions].flatten.each do |c|
-            subquery = subquery.where(c)
+        which_joins = current_joins
+        join_paths_index = nil
+        join_path_current_index = nil
+        join_path_other_index = nil
+        which_joins.each_with_index do |item, index|
+          join_path_current_index = item.find_index { |j| j[:join] == current_model }
+          join_path_other_index = item.find_index { |j| j[:join] == other_model }
+          if !join_path_current_index.nil? && !join_path_other_index.nil?
+            join_paths_index = index
+            break
           end
+        end
 
-          # add joins to get access to the relevant tables
-          # using the associations from the model definition being used for the subquery
-          relevant_joins = joins.select { |j| j[:join] == model}
+        first_index = [join_path_current_index, join_path_other_index].min
+        last_index = [join_path_current_index, join_path_other_index].max
+        relevant_joins = which_joins[join_paths_index][first_index..last_index]
+
 
         relevant_joins.each do |j|
-            join_table = j[:join]
-            join_condition = j[:on]
-            # assume this is an arel_table if it doesn't respond to .arel_table
-            arel_table = join_table.respond_to?(:arel_table) ? join_table.arel_table : join_table
+          join_table = j[:join]
+          join_condition = j[:on]
 
-            if arel_table.name == table.name
-              # add join as condition if this is the main table in the subquery
-              subquery = subquery.where(join_condition)
-            else
-              # add full join if this is not the main table in the subquery
-              subquery = subquery.join(arel_table).on(join_condition)
-            end
+          # assume this is an arel_table if it doesn't respond to .arel_table
+          arel_table = join_table.respond_to?(:arel_table) ? join_table.arel_table : join_table
 
+          if arel_table.name == other_table.name && !join_condition.nil?
+            # add join as condition if this is the main table in the subquery
+            subquery = subquery.where(join_condition)
+          elsif arel_table.name != other_table.name && !join_condition.nil?
+            # add full join if this is not the main table in the subquery
+            subquery = subquery.join(arel_table).on(join_condition)
           end
 
-          subquery.project(1).exists
+        end
+
+        subquery.project(1).exists
       end
 
     end

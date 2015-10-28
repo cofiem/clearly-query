@@ -77,8 +77,8 @@ module Clearly
       # @param [Arel::Nodes::Node, Arel::Attributes::Attribute, String] value
       # @return [void]
       def validate_node_or_attribute(value)
-        check = value.is_a?(Arel::Nodes::Node) || value.is_a?(String) || value.is_a?(Arel::Attributes::Attribute)
-        fail Clearly::Query::QueryArgumentError, "value must be Arel::Nodes::Node or String or Arel::Attributes::Attribute, got '#{value}'" unless check
+        check = value.is_a?(Arel::Nodes::Node) || value.is_a?(String) || value.is_a?(Arel::Attributes::Attribute) || value.is_a?(Symbol)
+            fail Clearly::Query::QueryArgumentError, "value must be Arel::Nodes::Node or String or Symbol or Arel::Attributes::Attribute, got '#{value}'" unless check
       end
 
       # Validate name value.

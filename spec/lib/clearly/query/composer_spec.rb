@@ -57,16 +57,16 @@ describe Clearly::Query::Composer do
           }.to raise_error(Clearly::Query::QueryArgumentError, "unrecognised operator 'not_a_real_filter'")
         end
 
-        it 'has only 1 entry' do
+        it 'has no entry' do
           expect {
             composer.query(Customer, {
                         or: {
                             name: {
-                                contains: 'Hello'
+
                             }
                         }
                     })
-          }.to raise_error(Clearly::Query::QueryArgumentError, "must have at least 2 conditions, got '1'")
+          }.to raise_error(Clearly::Query::QueryArgumentError, "filter hash must have at least 1 entry, got '0'")
         end
 
         it 'has not with no entries' do
@@ -127,7 +127,7 @@ describe Clearly::Query::Composer do
                             }
                         }
                     })
-          }.to raise_error(Clearly::Query::QueryArgumentError, "unrecognised logical operator 'not_a_valid_combiner'")
+          }.to raise_error(Clearly::Query::QueryArgumentError, "unrecognised operator or field 'not_a_valid_combiner'")
         end
 
         it "has a range missing 'from'" do
@@ -285,15 +285,15 @@ describe Clearly::Query::Composer do
         expect(query.to_a).to eq([])
       end
 
-      it 'is given a valid query that uses a table two steps away' do
+      it 'is given a valid query that uses a table five steps away' do
         # TODO: requires rewriting Composer#parse_filter to use definitions for table.field field names
         # instead of the hash in Definition#parse_table_field
 
-        hash = cleaner.do({and: {name: {contains: 'test'}, 'orders.shipped_at' => {lt: '2015-10-24'}}})
+        hash = cleaner.do({and: {name: {contains: 'test'}, 'customers.name' => {lt: '2015-10-24'}}})
         conditions = composer.query(Part, hash)
         expect(conditions.size).to eq(1)
 
-        expected = "\"parts\".\"name\" LIKE '%test%' AND EXISTS (SELECT 1 FROM \"orders\" INNER JOIN \"parts_products\" ON \"products\".\"id\" = \"parts_products\".\"product_id\" INNER JOIN \"products\" ON \"products\".\"id\" = \"orders_products\".\"product_id\" INNER JOIN \"orders_products\" ON \"orders\".\"id\" = \"orders_products\".\"order_id\" WHERE \"orders\".\"shipped_at\" < '2015-10-24' AND \"orders\".\"customer_id\" = \"customers\".\"id\")"
+        expected = "\"parts\".\"name\" LIKE '%test%' AND EXISTS (SELECT 1 FROM \"customers\" INNER JOIN \"parts_products\" ON \"products\".\"id\" = \"parts_products\".\"product_id\" INNER JOIN \"products\" ON \"products\".\"id\" = \"orders_products\".\"product_id\" INNER JOIN \"orders_products\" ON \"orders\".\"id\" = \"orders_products\".\"order_id\" INNER JOIN \"orders\" ON \"orders\".\"customer_id\" = \"customers\".\"id\" WHERE \"customers\".\"name\" < '2015-10-24' AND \"customers\".\"id\" = \"orders\".\"customer_id\")"
         expect(conditions.first.to_sql).to eq(expected)
 
         query = Part.all
@@ -351,48 +351,50 @@ describe Clearly::Query::Composer do
         expect(conditions.size).to eq(1)
 
         expected = {
-            eq: "#{column} = '#{operator_value}'",
-            equal: "#{column} = '#{operator_value}'",
-            not_eq: "#{column} != '#{operator_value}'",
-            not_equal: "#{column} != '#{operator_value}'",
-            lt: "#{column} < '#{operator_value}'",
-            less_than: "#{column} < '#{operator_value}'",
-            not_lt: "#{column} >= '#{operator_value}'",
-            not_less_than: "#{column} >= '#{operator_value}'",
-            gt: "#{column} > '#{operator_value}'",
-            greater_than: "#{column} > '#{operator_value}'",
-            not_gt: "#{column} <= '#{operator_value}'",
-            not_greater_than: "#{column} <= '#{operator_value}'",
-            lteq: "#{column} <= '#{operator_value}'",
-            less_than_or_equal: "#{column} <= '#{operator_value}'",
-            not_lteq: "#{column} > '#{operator_value}'",
-            not_less_than_or_equal: "#{column} > '#{operator_value}'",
-            gteq: "#{column} >= '#{operator_value}'",
-            grester_than_or_equal: "#{column} >= '#{operator_value}'",
-            not_gteq: "#{column} < '#{operator_value}'",
-            not_greater_than_or_equal: "#{column} < '#{operator_value}'",
+            eq: "#{column} = '#{operator_value}_eq'",
+            equal: "#{column} = '#{operator_value}_equal'",
+            not_eq: "#{column} != '#{operator_value}_not_eq'",
+            not_equal: "#{column} != '#{operator_value}_not_equal'",
+            lt: "#{column} < '#{operator_value}_lt'",
+            less_than: "#{column} < '#{operator_value}_less_than'",
+            not_lt: "#{column} >= '#{operator_value}_not_lt'",
+            not_less_than: "#{column} >= '#{operator_value}_not_less_than'",
+            gt: "#{column} > '#{operator_value}_gt'",
+            greater_than: "#{column} > '#{operator_value}_greater_than'",
+            not_gt: "#{column} <= '#{operator_value}_not_gt'",
+            not_greater_than: "#{column} <= '#{operator_value}_not_greater_than'",
+            lteq: "#{column} <= '#{operator_value}_lteq'",
+            less_than_or_equal: "#{column} <= '#{operator_value}_less_than_or_equal'",
+            not_lteq: "#{column} > '#{operator_value}_not_lteq'",
+            not_less_than_or_equal: "#{column} > '#{operator_value}_not_less_than_or_equal'",
+            gteq: "#{column} >= '#{operator_value}_gteq'",
+            greater_than_or_equal: "#{column} >= '#{operator_value}_greater_than_or_equal'",
+            not_gteq: "#{column} < '#{operator_value}_not_gteq'",
+            not_greater_than_or_equal: "#{column} < '#{operator_value}_not_greater_than_or_equal'",
 
-            range: "#{column} >= '#{operator_value}1' AND #{column} < '#{operator_value}2'",
-            in_range: "#{column} > '#{operator_value}1' AND #{column} <= '#{operator_value}2'",
-            not_range: "(#{column} < '#{operator_value}1' OR #{column} >= '#{operator_value}2')",
-            not_in_range: "(#{column} < '#{operator_value}1' OR #{column} >= '#{operator_value}2')",
-            in: "#{column} IN ('#{operator_value}')",
-            not_in: "#{column} NOT IN ('#{operator_value}')",
-            contains: "#{column} LIKE '%#{operator_value}%'",
-            contain: "#{column} LIKE '%#{operator_value}%'",
-            not_contains: "#{column} NOT LIKE '%#{operator_value}%'",
-            not_contain: "#{column} NOT LIKE '%#{operator_value}%'",
-            does_not_contain: "#{column} NOT LIKE '%#{operator_value}%'",
-            starts_with: "#{column} LIKE '#{operator_value}%'",
-            start_with: "#{column} LIKE '#{operator_value}%'",
-            not_starts_with: "#{column} NOT LIKE '#{operator_value}%'",
-            not_start_with: "#{column} NOT LIKE '#{operator_value}%'",
-            does_not_start_with: "#{column} NOT LIKE '#{operator_value}%'",
-            ends_with: "#{column} LIKE '%#{operator_value}'",
-            end_with: "#{column} LIKE '%#{operator_value}'",
-            not_ends_with: "#{column} NOT LIKE '%#{operator_value}'",
-            not_end_with: "#{column} NOT LIKE '%#{operator_value}'",
-            does_not_end_with: "#{column} NOT LIKE '%#{operator_value}'",
+            range: "#{column} >= '#{operator_value}_range_1' AND #{column} < '#{operator_value}_range_2'",
+            in_range: "#{column} > '#{operator_value}_in_range_1' AND #{column} <= '#{operator_value}_in_range_2'",
+            not_range: "(#{column} < '#{operator_value}_not_range_1' OR #{column} >= '#{operator_value}_not_range_2')",
+            not_in_range: "(#{column} < '#{operator_value}_not_in_range_1' OR #{column} >= '#{operator_value}_not_in_range_2')",
+            in: "#{column} IN ('#{operator_value}_in')",
+            is_in: "#{column} IN ('#{operator_value}_is_in')",
+            not_in: "#{column} NOT IN ('#{operator_value}_not_in')",
+            is_not_in: "#{column} NOT IN ('#{operator_value}_is_not_in')",
+            contains: "#{column} LIKE '%#{operator_value}\\_contains%'",
+            contain: "#{column} LIKE '%#{operator_value}\\_contain%'",
+            not_contains: "#{column} NOT LIKE '%#{operator_value}\\_not\\_contains%'",
+            not_contain: "#{column} NOT LIKE '%#{operator_value}\\_not\\_contain%'",
+            does_not_contain: "#{column} NOT LIKE '%#{operator_value}\\_does\\_not\\_contain%'",
+            starts_with: "#{column} LIKE '#{operator_value}\\_starts\\_with%'",
+            start_with: "#{column} LIKE '#{operator_value}\\_start\\_with%'",
+            not_starts_with: "#{column} NOT LIKE '#{operator_value}\\_not\\_starts\\_with%'",
+            not_start_with: "#{column} NOT LIKE '#{operator_value}\\_not\\_start\\_with%'",
+            does_not_start_with: "#{column} NOT LIKE '#{operator_value}\\_does\\_not\\_start\\_with%'",
+            ends_with: "#{column} LIKE '%#{operator_value}\\_ends\\_with'",
+            end_with: "#{column} LIKE '%#{operator_value}\\_end\\_with'",
+            not_ends_with: "#{column} NOT LIKE '%#{operator_value}\\_not\\_ends\\_with'",
+            not_end_with: "#{column} NOT LIKE '%#{operator_value}\\_not\\_end\\_with'",
+            does_not_end_with: "#{column} NOT LIKE '%#{operator_value}\\_does\\_not\\_end\\_with'",
 
             null: "#{column} IS NULL",
             is_null: "#{column} IS NOT NULL"

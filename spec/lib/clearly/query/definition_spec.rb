@@ -6,7 +6,7 @@ describe Clearly::Query::Definition do
   it 'is not valid with nil model' do
     expect {
       Clearly::Query::Definition.new({hash: Customer.clearly_query_def})
-    }.to raise_error(Clearly::Query::QueryArgumentError, "value must not be empty, got ''")
+    }.to raise_error(Clearly::Query::QueryArgumentError, 'could not build definition from options')
   end
 
   it 'is not valid with nil hash' do

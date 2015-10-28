@@ -28,7 +28,10 @@ module Clearly
       # @return [Array<Hash>] model associations hierarchy
       attr_reader :associations
 
-      # @return [Array<Hash>] joins for immediate relations
+      # @return [Array<Hash>] model associations flat array
+      attr_reader :associations_flat
+
+      # @return [Array<Array<Hash>>] associations organised to calculate joins
       attr_reader :joins
 
       # @return [Hash] defaults
@@ -48,7 +51,7 @@ module Clearly
         result = create_from_model(opts[:model], opts[:hash]) unless opts[:model].nil?
         result = create_from_table(opts[:table]) if result.nil? && !opts[:table].nil?
 
-        fail Clearly::Query::QueryArgumentError.new("could not build definition from options: #{opts}") if result.nil?
+        fail Clearly::Query::QueryArgumentError.new('could not build definition from options') if result.nil?
         result
       end
 
@@ -85,7 +88,16 @@ module Clearly
         @field_mappings = mappings
 
         @associations = hash[:associations]
-        @joins = build_joins(hash[:associations], @table)
+        @associations_flat = build_associations_flat(@associations)
+
+        if @associations.size > 0
+          node = {join: model, on: nil, associations: hash[:associations]}
+          graph = Clearly::Query::Graph.new(node, :associations)
+          @joins = graph.branches
+        else
+          @joins = []
+        end
+
         @defaults = hash[:defaults]
 
         self
@@ -103,6 +115,7 @@ module Clearly
         @text_fields = []
         @field_mappings = []
         @associations = []
+        @associations_flat = []
         @joins = []
         @defaults = {}
 
@@ -114,39 +127,37 @@ module Clearly
         associated_table_names.each do |t|
           arel_table = Arel::Table.new(t.to_sym)
           id_column = "#{t.singularize}_id"
-          join = {join: arel_table, on: arel_table[:id].eq(table[id_column])}
+          join = {join: arel_table, on: arel_table[:id].eq(table[id_column]), available: true}
 
           @all_fields.push(id_column)
           @associations.push(join)
-          @joins.push(join)
+          @associations_flat.push(join)
+          @joins.push([join])
         end
 
         self
       end
 
-      # Parse associations to build joins.
+      # Create a flat array of joins.
       # @param [Array<Hash>] associations
-      # @param [Arel::Table] table
-      # @return [Array<Hash>] joins
-      def build_joins(associations, table)
+      # @return [Array<Hash>] associations
+      def build_associations_flat(associations)
         joins = []
 
         if associations.is_a?(Array)
-          more_associations = associations.map { |i| build_joins(i, table) }
+          more_associations = associations.map { |i| build_associations_flat(i) }
           joins.push(*more_associations.flatten.compact) if more_associations.size > 0
+
         elsif associations.is_a?(Hash)
+          joins.push(associations.except(:associations))
 
-          join = associations[:join]
-          on = associations[:on]
-          available = associations[:available]
-
-          more_associations = build_joins(associations[:associations], join)
-          joins.push(*more_associations.flatten.compact) if more_associations.size > 0
-
-          joins.push({join: join, on: on}) if available
+          if associations[:associations] && associations[:associations].size > 0
+            more_associations = build_associations_flat(associations[:associations])
+            joins.push(*more_associations.compact) if more_associations.size > 0
+          end
         end
 
-        joins
+        joins.uniq
       end
 
     end
