@@ -123,9 +123,13 @@ module Clearly
 
         # if there are no items, let it through
         if value.count > 0
-          # all items must be the same type. Assume the first item is the correct type.
+          # all items must be the same type (or a subclass). Assume the first item is the correct type.
           type_compare_item = value[0].class
-          type_compare = value.all? { |item| item.is_a?(type_compare_item) }
+          type_compare = value.all? do |item|
+            is_same_class = item.is_a?(type_compare_item)
+            item_class = item.class
+            is_same_class ? true : (item_class <= Arel::Nodes::Node && type_compare_item <= Arel::Nodes::Node)
+          end
           fail Clearly::Query::FilterArgumentError, "array values must be a single consistent type, got '#{value.map { |v| v.class.name }.join(', ')}'" unless type_compare
 
           # restrict length of strings

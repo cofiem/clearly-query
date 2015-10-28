@@ -13,6 +13,7 @@ require 'clearly/query/compose/comparison'
 require 'clearly/query/compose/range'
 require 'clearly/query/compose/special'
 require 'clearly/query/compose/custom'
+require 'clearly/query/compose/conditions'
 
 require 'clearly/query/composer'
 require 'clearly/query/definition'
