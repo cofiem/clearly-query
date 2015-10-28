@@ -2,7 +2,7 @@ module Clearly
   module Query
 
     # Generic error from Clearly Query
-    class FilterArgumentError < ArgumentError
+    class QueryArgumentError < ArgumentError
 
       # @return [Hash] partial filter hash
       attr_reader :filter_segment
@@ -10,7 +10,7 @@ module Clearly
       # Create a Filter Argument Error
       # @param [String] message
       # @param [Hash] filter_segment
-      # @return [FilterArgumentError]
+      # @return [QueryArgumentError]
       def initialize(message = nil, filter_segment = nil)
         @message = message
         @filter_segment = filter_segment

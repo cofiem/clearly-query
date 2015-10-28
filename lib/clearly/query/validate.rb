@@ -34,8 +34,8 @@ module Clearly
         validate_model(model)
         validate_array(models_allowed)
 
-        fail Clearly::Query::FilterArgumentError, "models allowed must be an Array, got '#{models_allowed}'" unless models_allowed.is_a?(Array)
-        fail Clearly::Query::FilterArgumentError, "model must be in '#{models_allowed}', got '#{model}'" unless models_allowed.include?(model)
+        fail Clearly::Query::QueryArgumentError, "models allowed must be an Array, got '#{models_allowed}'" unless models_allowed.is_a?(Array)
+        fail Clearly::Query::QueryArgumentError, "model must be in '#{models_allowed}', got '#{model}'" unless models_allowed.include?(model)
       end
 
       # Validate query and hash values.
@@ -52,7 +52,7 @@ module Clearly
       # @raise [FilterArgumentError] if table is not an Arel::Table
       # @return [void]
       def validate_table(table)
-        fail Clearly::Query::FilterArgumentError, "table must be Arel::Table, got '#{table.class}'" unless table.is_a?(Arel::Table)
+        fail Clearly::Query::QueryArgumentError, "table must be Arel::Table, got '#{table.class}'" unless table.is_a?(Arel::Table)
       end
 
       # Validate table value.
@@ -60,7 +60,7 @@ module Clearly
       # @raise [FilterArgumentError] if query is not an Arel::Query
       # @return [void]
       def validate_query(query)
-        fail Clearly::Query::FilterArgumentError, "query must be ActiveRecord::Relation, got '#{query.class}'" unless query.is_a?(ActiveRecord::Relation)
+        fail Clearly::Query::QueryArgumentError, "query must be ActiveRecord::Relation, got '#{query.class}'" unless query.is_a?(ActiveRecord::Relation)
       end
 
       # Validate condition value.
@@ -69,7 +69,7 @@ module Clearly
       # @return [void]
       def validate_condition(condition)
         if !condition.is_a?(Arel::Nodes::Node) && !condition.is_a?(String)
-          fail Clearly::Query::FilterArgumentError, "condition must be Arel::Nodes::Node or String, got '#{condition}'"
+          fail Clearly::Query::QueryArgumentError, "condition must be Arel::Nodes::Node or String, got '#{condition}'"
         end
       end
 
@@ -78,7 +78,7 @@ module Clearly
       # @return [void]
       def validate_node_or_attribute(value)
         check = value.is_a?(Arel::Nodes::Node) || value.is_a?(String) || value.is_a?(Arel::Attributes::Attribute)
-        fail Clearly::Query::FilterArgumentError, "value must be Arel::Nodes::Node or String or Arel::Attributes::Attribute, got '#{value}'" unless check
+        fail Clearly::Query::QueryArgumentError, "value must be Arel::Nodes::Node or String or Arel::Attributes::Attribute, got '#{value}'" unless check
       end
 
       # Validate name value.
@@ -88,9 +88,9 @@ module Clearly
       # @return [void]
       def validate_name(name, allowed)
         validate_not_blank(name)
-        fail Clearly::Query::FilterArgumentError, "name must be a symbol, got '#{name}'" unless name.is_a?(Symbol)
-        fail Clearly::Query::FilterArgumentError, "allowed must be an Array, got '#{allowed}'" unless allowed.is_a?(Array)
-        fail Clearly::Query::FilterArgumentError, "name must be in '#{allowed}', got '#{name}'" unless allowed.include?(name)
+        fail Clearly::Query::QueryArgumentError, "name must be a symbol, got '#{name}'" unless name.is_a?(Symbol)
+        fail Clearly::Query::QueryArgumentError, "allowed must be an Array, got '#{allowed}'" unless allowed.is_a?(Array)
+        fail Clearly::Query::QueryArgumentError, "name must be in '#{allowed}', got '#{name}'" unless allowed.include?(name)
       end
 
       # Validate model value.
@@ -99,7 +99,7 @@ module Clearly
       # @return [void]
       def validate_model(model)
         validate_not_blank(model)
-        fail Clearly::Query::FilterArgumentError, "model must be an ActiveRecord::Base, got '#{model.base_class}'" unless model < ActiveRecord::Base
+        fail Clearly::Query::QueryArgumentError, "model must be an ActiveRecord::Base, got '#{model.base_class}'" unless model < ActiveRecord::Base
       end
 
       # Validate an array.
@@ -108,7 +108,7 @@ module Clearly
       # @return [void]
       def validate_array(value)
         validate_not_blank(value)
-        fail Clearly::Query::FilterArgumentError, "value must be an Array or Arel::SelectManager, got '#{value.class}'" unless value.is_a?(Array) || value.is_a?(Arel::SelectManager)
+        fail Clearly::Query::QueryArgumentError, "value must be an Array or Arel::SelectManager, got '#{value.class}'" unless value.is_a?(Array) || value.is_a?(Arel::SelectManager)
       end
 
       # Validate array items. Do not validate if value is not an Array.
@@ -118,7 +118,7 @@ module Clearly
       def validate_array_items(value)
         # must be a collection of items
         if !value.respond_to?(:each) || !value.respond_to?(:all?) || !value.respond_to?(:any?) || !value.respond_to?(:count)
-          fail Clearly::Query::FilterArgumentError, "must be a collection of items, got '#{value.class}'"
+          fail Clearly::Query::QueryArgumentError, "must be a collection of items, got '#{value.class}'"
         end
 
         # if there are no items, let it through
@@ -130,21 +130,21 @@ module Clearly
             item_class = item.class
             is_same_class ? true : (item_class <= Arel::Nodes::Node && type_compare_item <= Arel::Nodes::Node)
           end
-          fail Clearly::Query::FilterArgumentError, "array values must be a single consistent type, got '#{value.map { |v| v.class.name }.join(', ')}'" unless type_compare
+          fail Clearly::Query::QueryArgumentError, "array values must be a single consistent type, got '#{value.map { |v| v.class.name }.join(', ')}'" unless type_compare
 
           # restrict length of strings
           if type_compare_item.is_a?(String)
             max_string_length = 120
             string_length = value.all? { |item| item.size <= max_string_length }
-            fail Clearly::Query::FilterArgumentError, "array values that are strings must be '#{max_string_length}' characters or less" unless string_length
+            fail Clearly::Query::QueryArgumentError, "array values that are strings must be '#{max_string_length}' characters or less" unless string_length
           end
 
           # array contents cannot be Arrays or Hashes
           array_check = value.any? { |item| item.is_a?(Array) }
-          fail Clearly::Query::FilterArgumentError, 'array values cannot be arrays' if array_check
+          fail Clearly::Query::QueryArgumentError, 'array values cannot be arrays' if array_check
 
           hash_check = value.any? { |item| item.is_a?(Hash) }
-          fail Clearly::Query::FilterArgumentError, 'array values cannot be hashes' if hash_check
+          fail Clearly::Query::QueryArgumentError, 'array values cannot be hashes' if hash_check
 
         end
       end
@@ -155,7 +155,7 @@ module Clearly
       # @return [void]
       def validate_hash(value)
         validate_not_blank(value)
-        fail Clearly::Query::FilterArgumentError, "value must be a Hash, got '#{value}'" unless value.is_a?(Hash)
+        fail Clearly::Query::QueryArgumentError, "value must be a Hash, got '#{value}'" unless value.is_a?(Hash)
       end
 
       # Validate a symbol.
@@ -164,21 +164,21 @@ module Clearly
       # @return [void]
       def validate_symbol(value)
         validate_not_blank(value)
-        fail Clearly::Query::FilterArgumentError, "value must be a Symbol, got '#{value}'" unless value.is_a?(Symbol)
+        fail Clearly::Query::QueryArgumentError, "value must be a Symbol, got '#{value}'" unless value.is_a?(Symbol)
       end
 
       # Validate value is not blank
       # @param [Object] value
       # @return [void]
       def validate_not_blank(value)
-        fail Clearly::Query::FilterArgumentError, "value must not be empty, got '#{value}'" if value.blank?
+        fail Clearly::Query::QueryArgumentError, "value must not be empty, got '#{value}'" if value.blank?
       end
 
       # Validate value is a boolean
       # @param [Boolean] value
       # @return [void]
       def validate_boolean(value)
-        fail Clearly::Query::FilterArgumentError, "value must be a boolean, got '#{value}'" if !value.is_a?(TrueClass) && !value.is_a?(FalseClass)
+        fail Clearly::Query::QueryArgumentError, "value must be a boolean, got '#{value}'" if !value.is_a?(TrueClass) && !value.is_a?(FalseClass)
       end
 
       # Escape wildcards in like value..
@@ -211,12 +211,12 @@ module Clearly
       # @return [void]
       def validate_integer(value, min = nil, max = nil)
         validate_not_blank(value)
-        fail Clearly::Query::FilterArgumentError, "value must be an integer, got '#{value}'" if value != value.to_i
+        fail Clearly::Query::QueryArgumentError, "value must be an integer, got '#{value}'" if value != value.to_i
 
         value_i = value.to_i
 
-        fail Clearly::Query::FilterArgumentError, "value must be '#{min}' or greater, got '#{value_i}'" if !min.blank? && value_i < min
-        fail Clearly::Query::FilterArgumentError, "value must be '#{max}' or less, got '#{value_i}'" if !max.blank? && value_i > max
+        fail Clearly::Query::QueryArgumentError, "value must be '#{min}' or greater, got '#{value_i}'" if !min.blank? && value_i < min
+        fail Clearly::Query::QueryArgumentError, "value must be '#{max}' or less, got '#{value_i}'" if !max.blank? && value_i > max
       end
 
       # Check that value is a float.
@@ -227,11 +227,11 @@ module Clearly
         validate_not_blank(value)
 
         filtered = value.to_s.tr('^0-9.', '')
-        fail Clearly::Query::FilterArgumentError, "value must be a float, got '#{filtered}'" if filtered != value
-        fail Clearly::Query::FilterArgumentError, "value must be a float after conversion, got '#{filtered}'" if filtered != value.to_f
+        fail Clearly::Query::QueryArgumentError, "value must be a float, got '#{filtered}'" if filtered != value
+        fail Clearly::Query::QueryArgumentError, "value must be a float after conversion, got '#{filtered}'" if filtered != value.to_f
 
         value_f = filtered.to_f
-        fail Clearly::Query::FilterArgumentError, "value must be greater than 0, got '#{value_f}'" if value_f <= 0
+        fail Clearly::Query::QueryArgumentError, "value must be greater than 0, got '#{value_f}'" if value_f <= 0
 
       end
 
@@ -240,7 +240,7 @@ module Clearly
       # @return [void]
       def validate_definition_instance(value)
         validate_not_blank(value)
-        fail Clearly::Query::FilterArgumentError, "value must be a model definition, got '#{value.class}'" unless value.is_a?(Clearly::Query::Definition)
+        fail Clearly::Query::QueryArgumentError, "value must be a model definition, got '#{value.class}'" unless value.is_a?(Clearly::Query::Definition)
       end
 
       # Validate definition specification

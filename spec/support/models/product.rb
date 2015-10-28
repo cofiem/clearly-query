@@ -44,13 +44,13 @@ class Product < ActiveRecord::Base
                 ]
             },
             {
-                join: Arel::Table.new(:products_parts),
-                on: Product.arel_table[:id].eq(Arel::Table.new(:products_parts)[:product_id]),
+                join: Arel::Table.new(:parts_products),
+                on: Product.arel_table[:id].eq(Arel::Table.new(:parts_products)[:product_id]),
                 available: false,
                 associations: [
                     {
                         join: Part,
-                        on: Part.arel_table[:id].eq(Arel::Table.new(:products_parts)[:part_id]),
+                        on: Part.arel_table[:id].eq(Arel::Table.new(:parts_products)[:part_id]),
                         available: true,
 
                     }

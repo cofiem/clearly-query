@@ -10,7 +10,6 @@ module Clearly
       include Clearly::Query::Compose::Special
       include Clearly::Query::Validate
 
-
       # @return [ActiveRecord::Base] active record model for this definition
       attr_reader :model
 
@@ -26,23 +25,54 @@ module Clearly
       # @return [Array<Hash>] mapped model fields
       attr_reader :field_mappings
 
-      # @return [Array<Hash>] model associations
+      # @return [Array<Hash>] model associations hierarchy
       attr_reader :associations
 
-      # @return [Array<Hash>] model associations
-      attr_reader :associations_flat
+      # @return [Array<Hash>] joins for immediate relations
+      attr_reader :joins
 
       # @return [Hash] defaults
       attr_reader :defaults
 
       # Create a Definition
-      # @param [ActiveRecord::Base] model
-      # @param [Hash] hash
+      # @param [Hash] opts the options to create a message with.
+      # @option opts [ActiveRecord::Base] :model (nil) the ActiveRecord model
+      # @option opts [Hash] :hash (nil) the model definition hash
+      # @option opts [Arel::Table] :table (nil) the arel table
       # @return [Clearly::Query::Definition]
-      def initialize(model, hash)
+      def initialize(opts)
+        opts = {model: nil, hash: nil, table: nil}.merge(opts)
+
+        # two ways to go: model and hash, or table and joins
+        result = nil
+        result = create_from_model(opts[:model], opts[:hash]) unless opts[:model].nil?
+        result = create_from_table(opts[:table]) if result.nil? && !opts[:table].nil?
+
+        fail Clearly::Query::QueryArgumentError.new("could not build definition from options: #{opts}") if result.nil?
+        result
+      end
+
+      # Build custom field from model mappings
+      # @param [Symbol] column_name
+      # @return [Arel::Nodes::Node, Arel::Attributes::Attribute, String]
+      def get_field_mapping(column_name)
+        value = @field_mappings[column_name]
+        if @field_mappings.keys.include?(column_name) && !value.blank?
+          value
+        else
+          nil
+        end
+      end
+
+      private
+
+      # Create a Definition from an ActiveRecord model.
+      # @param [ActiveRecord::Base] model the ActiveRecord model
+      # @param [Hash] hash the model definition hash
+      # @return [Clearly::Query::Definition]
+      def create_from_model(model, hash)
         validate_model(model)
         validate_definition(hash)
-        @raw = hash
 
         @model = model
         @table = relation_table(model)
@@ -55,128 +85,68 @@ module Clearly
         @field_mappings = mappings
 
         @associations = hash[:associations]
-        @associations_flat = build_associations(hash[:associations], @table)
+        @joins = build_joins(hash[:associations], @table)
         @defaults = hash[:defaults]
 
         self
       end
 
-      # Build table field from field symbol.
-      # @param [Symbol] field
-      # @return [Arel::Table, Symbol, Hash] table, field, filter_settings
-      def parse_table_field(field)
-        fail Clearly::Query::FilterArgumentError.new('field name must be a symbol') unless field.is_a?(Symbol)
+      # Create a Definition for a has and belongs to many table.
+      # @param [Arel::Table] table the arel table
+      # @return [Clearly::Query::Definition]
+      def create_from_table(table)
+        validate_table(table)
 
-        field_s = field.to_s
+        @model = nil
+        @table = table
+        @all_fields = []
+        @text_fields = []
+        @field_mappings = []
+        @associations = []
+        @joins = []
+        @defaults = {}
 
-        if field_s.include?('.')
-          dot_index = field.to_s.index('.')
-          parsed_table = field[0, dot_index].to_sym
-          parsed_field = field[(dot_index + 1)..field.length].to_sym
+        table_name = table.name
+        associated_table_names = table_name.split('_')
 
-          models = @associations_flat.map { |a| a[:join] }
-          table_names = @associations_flat.map { |a| a[:join].table_name.to_sym }
+        # assumes associated tables primary key is 'id'
+        # assumes associated table names are the plural version of HABTM _id columns
+        associated_table_names.each do |t|
+          arel_table = Arel::Table.new(t.to_sym)
+          id_column = "#{t.singularize}_id"
+          join = {join: arel_table, on: arel_table[:id].eq(table[id_column])}
 
-          validate_name(parsed_table, table_names)
-
-          model = parsed_table.to_s.classify.constantize
-
-          validate_association(model, models)
-
-          model_filter_settings = model.clearly_query_def
-          model_valid_fields = model_filter_settings[:fields][:valid].map(&:to_sym)
-          arel_table = relation_table(model)
-
-          validate_table_column(arel_table, parsed_field, model_valid_fields)
-
-          {
-              table_name: parsed_table,
-              field_name: parsed_field,
-              arel_table: arel_table,
-              model: model,
-              filter_settings: model_filter_settings
-          }
-        else
-          {
-              table_name: @table.name,
-              field_name: field,
-              arel_table: @table,
-              model: @model,
-              filter_settings: @raw
-          }
+          @all_fields.push(id_column)
+          @associations.push(join)
+          @joins.push(join)
         end
 
+        self
       end
 
-      # Parse association to get names.
-      # @param [Hash, Array] valid_associations
+      # Parse associations to build joins.
+      # @param [Array<Hash>] associations
       # @param [Arel::Table] table
-      # @return [Arel::Table, Symbol, Hash] table, field, filter_settings
-      def build_associations(valid_associations, table)
+      # @return [Array<Hash>] joins
+      def build_joins(associations, table)
+        joins = []
 
-        associations = []
-        if valid_associations.is_a?(Array)
-          more_associations = valid_associations.map { |i| build_associations(i, table) }
-          associations.push(*more_associations.flatten.compact) if more_associations.size > 0
-        elsif valid_associations.is_a?(Hash)
+        if associations.is_a?(Array)
+          more_associations = associations.map { |i| build_joins(i, table) }
+          joins.push(*more_associations.flatten.compact) if more_associations.size > 0
+        elsif associations.is_a?(Hash)
 
-          join = valid_associations[:join]
-          on = valid_associations[:on]
-          available = valid_associations[:available]
+          join = associations[:join]
+          on = associations[:on]
+          available = associations[:available]
 
-          more_associations = build_associations(valid_associations[:associations], join)
-          associations.push(*more_associations.flatten.compact) if more_associations.size > 0
+          more_associations = build_joins(associations[:associations], join)
+          joins.push(*more_associations.flatten.compact) if more_associations.size > 0
 
-          if available
-            associations.push(
-                {
-                    join: join,
-                    on: on
-                })
-          end
-
+          joins.push({join: join, on: on}) if available
         end
 
-        associations
-      end
-
-      # Get only the relevant joins
-      # @param [ActiveRecord::Base] model
-      # @param [Hash] associations
-      # @param [Array<Hash>] joins
-      # @return [Array<Hash>, Boolean] joins, match
-      def build_joins(model, associations, joins = [])
-
-        associations.each do |a|
-          model_join = a[:join]
-          model_on = a[:on]
-
-          join = {join: model_join, on: model_on}
-
-          return [[join], true] if model == model_join
-
-          if a.include?(:associations)
-            assoc = a[:associations]
-            assoc_joins, match = build_joins(model, assoc, [join] + joins)
-
-            return [[join] + assoc_joins, true] if match
-          end
-
-        end
-
-        [[], false]
-      end
-
-      # Build custom field from model mappings
-      # @param [Symbol] column_name
-      # @return [Arel::Nodes::Node, Arel::Attributes::Attribute, String]
-      def build_custom_field(column_name)
-        value = @field_mappings[column_name]
-        if @field_mappings.keys.include?(column_name) && !value.blank?
-          value
-        else
-          nil
-        end
+        joins
       end
 
     end
