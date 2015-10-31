@@ -32,6 +32,7 @@ module Clearly
       # @return [void]
       def validate_association(model, models_allowed)
         validate_model(model)
+        validate_not_blank(models_allowed)
         validate_array(models_allowed)
 
         fail Clearly::Query::QueryArgumentError, "models allowed must be an Array, got '#{models_allowed}'" unless models_allowed.is_a?(Array)
@@ -107,7 +108,6 @@ module Clearly
       # @raise [FilterArgumentError] if value is not a valid Array.
       # @return [void]
       def validate_array(value)
-        validate_not_blank(value)
         fail Clearly::Query::QueryArgumentError, "value must be an Array or Arel::SelectManager, got '#{value.class}'" unless value.is_a?(Array) || value.is_a?(Arel::SelectManager)
       end
 
@@ -252,12 +252,15 @@ module Clearly
         # fields
         validate_hash(value[:fields])
 
+        validate_not_blank(value[:fields][:valid])
         validate_array(value[:fields][:valid])
         validate_array_items(value[:fields][:valid])
 
+        validate_not_blank(value[:fields][:text])
         validate_array(value[:fields][:text])
         validate_array_items(value[:fields][:text])
 
+        validate_not_blank(value[:fields][:mappings])
         validate_array(value[:fields][:mappings])
 
         value[:fields][:mappings].each do |mapping|

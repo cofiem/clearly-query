@@ -48,7 +48,7 @@ class Order < ActiveRecord::Base
                                         join: Part,
                                         on: Part.arel_table[:id].eq(Arel::Table.new(:parts_products)[:part_id]),
                                         available: true,
-
+                                        associations: []
                                     }
                                 ]
                             }

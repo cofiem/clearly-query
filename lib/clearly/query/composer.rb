@@ -13,6 +13,7 @@ module Clearly
       # @param [Array<Clearly::Query::Definition>] definitions
       # @return [Clearly::Query::Composer]
       def initialize(definitions)
+        validate_not_blank(definitions)
         validate_array(definitions)
         validate_definition_instance(definitions[0])
         validate_array_items(definitions)

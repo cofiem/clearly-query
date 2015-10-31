@@ -19,7 +19,7 @@ class DbCreate < ActiveRecord::Migration
       t.string        :code,            null: false
       t.string        :brand,           null: false
       t.datetime      :introduced_at,   null: false
-      t.datetime      :discontinued_at, null: false
+      t.datetime      :discontinued_at, null: true
       t.timestamps null: false
     end
 

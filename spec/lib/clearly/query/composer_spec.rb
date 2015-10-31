@@ -13,6 +13,14 @@ describe Clearly::Query::Composer do
     expect(test_definitions).to eq(composer_definitions)
   end
 
+  it 'raises error when more than one definition matches' do
+    invalid_composer = Clearly::Query::Composer.new([customer_def, customer_def])
+    query = cleaner.do({})
+    expect {
+      invalid_composer.query(Customer, query)
+    }.to raise_error(Clearly::Query::QueryArgumentError, "exactly one definition must match, found '2'")
+  end
+
   it 'finds all active record models' do
     definitions = Clearly::Query::Composer.from_active_record.definitions.reject{ |d| d.model.nil? }.map { |d| d.model.name }
     expect([Customer.name, Order.name, Part.name, Product.name]).to eq(definitions)

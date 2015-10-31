@@ -43,7 +43,7 @@ class Part < ActiveRecord::Base
                                             {
                                                 join: Customer,
                                                 on: Customer.arel_table[:id].eq(Order.arel_table[:customer_id]),
-                                                available: true,
+                                                available: true
                                             }
                                         ]
                                     }

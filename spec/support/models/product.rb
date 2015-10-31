@@ -38,6 +38,7 @@ class Product < ActiveRecord::Base
                                 join: Customer,
                                 on: Customer.arel_table[:id].eq(Order.arel_table[:customer_id]),
                                 available: true,
+                                associations: []
                             }
                         ]
                     }
@@ -52,7 +53,7 @@ class Product < ActiveRecord::Base
                         join: Part,
                         on: Part.arel_table[:id].eq(Arel::Table.new(:parts_products)[:part_id]),
                         available: true,
-
+                        associations: []
                     }
                 ]
             }

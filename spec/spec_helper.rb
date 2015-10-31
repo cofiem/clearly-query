@@ -10,6 +10,7 @@ require 'active_record'
 require 'sqlite3'
 require 'logger'
 require 'zonebie'
+require 'database_cleaner'
 
 include ActiveRecord::Tasks
 
@@ -72,5 +73,17 @@ RSpec.configure do |config|
   ActiveRecord::Migrator.migrate(migrations_path)
 
   #load 'active_record/railties/databases.rake'
+
+  config.before(:suite) do
+    DatabaseCleaner.strategy = :truncation
+  end
+
+  config.before(:each) do
+    DatabaseCleaner.start
+  end
+
+  config.after(:each) do
+    DatabaseCleaner.clean
+  end
 
 end

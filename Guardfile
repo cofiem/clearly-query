@@ -2,8 +2,6 @@ guard :rspec, cmd: 'bin/rspec' do
   require 'guard/rspec/dsl'
   dsl = Guard::RSpec::Dsl.new(self)
 
-  # Feel free to open issues for suggestions and improvements
-
   # RSpec files
   rspec = dsl.rspec
   watch(rspec.spec_helper) { rspec.spec_dir }

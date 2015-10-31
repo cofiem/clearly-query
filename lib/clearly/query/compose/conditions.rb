@@ -66,6 +66,7 @@ module Clearly
         # @return [ActiveRecord::Relation] the modified query
         def condition_apply(query, conditions)
           conditions = [conditions].flatten
+          validate_not_blank(conditions)
           validate_array(conditions)
 
           conditions.each do |condition|
@@ -82,6 +83,7 @@ module Clearly
         # @return [Arel::Nodes::Node] condition
         def condition_combine(combiner, *conditions)
           conditions = [conditions].flatten
+          validate_not_blank(conditions)
           validate_array(conditions)
           validate_condition(conditions[0])
           validate_array_items(conditions)
