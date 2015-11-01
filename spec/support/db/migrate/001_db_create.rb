@@ -19,7 +19,7 @@ class DbCreate < ActiveRecord::Migration
       t.string        :code,            null: false
       t.string        :brand,           null: false
       t.datetime      :introduced_at,   null: false
-      t.datetime      :discontinued_at, null: false
+      t.datetime      :discontinued_at, null: true
       t.timestamps null: false
     end
 
@@ -39,14 +39,14 @@ class DbCreate < ActiveRecord::Migration
       t.timestamps null: false
     end
 
-    create_table :products_parts, id: false do |t|
+    create_table :parts_products, id: false do |t|
       t.integer :product_id, null: false
       t.integer :part_id,    null: false
       t.timestamps null: false
     end
 
-    add_foreign_key :products_parts, :products
-    add_foreign_key :products_parts, :parts
+    add_foreign_key :parts_products, :products
+    add_foreign_key :parts_products, :parts
 
     add_index :customers, :name, unique: true
 
@@ -56,7 +56,7 @@ class DbCreate < ActiveRecord::Migration
     add_index :parts, :name, unique: true
     add_index :parts, :code, unique: true
 
-    add_index :products_parts, [:product_id, :part_id], unique: true
+    add_index :parts_products, [:product_id, :part_id], unique: true
 
   end
 end

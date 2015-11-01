@@ -1,10 +1,21 @@
 # Changelog
 
-Non-trivial changes will be documented here. This project adheres to [Semantic Versioning](http://semver.org/) and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
+Non-trivial changes will be documented here. 
+This project adheres to [Semantic Versioning](http://semver.org/) 
+and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 
 ## Unreleased
 
-## 2015-10-27 - First release [0.2.0](https://github.com/cofiem/clearly-query/releases/tag/0.2.0)
+## Release [0.3.0](https://github.com/cofiem/clearly-query/releases/tag/0.3.0) (2015-11-01)
+
+### Added
+ - new DFS graph traversal for calculating joins between tables
+ - additional tests for Composer
+
+### Changed
+ - composer and definition functionality redistributed to be more obvious and have simpler methods
+
+## Release [0.2.0](https://github.com/cofiem/clearly-query/releases/tag/0.2.0) (2015-10-27)
 
 ### Added
 

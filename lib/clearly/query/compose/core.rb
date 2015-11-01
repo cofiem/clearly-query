@@ -45,11 +45,20 @@ module Clearly
         # Join conditions using and.
         # @param [Arel::Nodes::Node] first_condition
         # @param [Arel::Nodes::Node] second_condition
+        # @param [Array<Arel::Nodes::Node>] conditions
         # @return [Arel::Nodes::Node] condition
-        def compose_and(first_condition, second_condition)
+        def compose_and(first_condition, second_condition, *conditions)
           validate_condition(first_condition)
           validate_condition(second_condition)
-          first_condition.and(second_condition)
+          combined = first_condition.and(second_condition)
+
+          unless conditions.blank?
+            conditions.each do |condition|
+              combined = combined.and(condition)
+            end
+          end
+
+          combined
         end
 
         # Join conditions using not.

@@ -69,6 +69,7 @@ module Clearly
         def compose_in_node(node, values)
           validate_node_or_attribute(node)
           values = [values].flatten
+          validate_not_blank(values)
           validate_array(values)
           validate_array_items(values)
           node.in(values)
@@ -81,6 +82,7 @@ module Clearly
         def compose_not_in_node(node, values)
           validate_node_or_attribute(node)
           values = [values].flatten
+          validate_not_blank(values)
           validate_array(values)
           validate_array_items(values)
           node.not_in(values)

@@ -13,22 +13,32 @@ module Clearly
       # @param [Array<Clearly::Query::Definition>] definitions
       # @return [Clearly::Query::Composer]
       def initialize(definitions)
+        validate_not_blank(definitions)
         validate_array(definitions)
         validate_definition_instance(definitions[0])
         validate_array_items(definitions)
         @definitions = definitions
+        @table_names = definitions.map { |d| d.table.name }
         self
       end
 
       # Create an instance of Composer from all ActiveRecord models.
       # @return [Clearly::Query::Composer]
       def self.from_active_record
-        definitions =
-            ActiveRecord::Base.descendants
-                .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
-                .reject { |d| d.name.include?('HABTM_') }
-                .sort { |a, b| a.name <=> b.name }
-                .map { |d| Clearly::Query::Definition.new(d, d.clearly_query_def) }
+        models = ActiveRecord::Base
+            .descendants
+            .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
+            .sort { |a, b| a.name <=> b.name }
+            .uniq { |d| d.arel_table.name }
+
+        definitions = models.map do |d|
+          if d.name.include?('HABTM_')
+            Clearly::Query::Definition.new({table: d.arel_table})
+          else
+            Clearly::Query::Definition.new({model: d, hash: d.clearly_query_def})
+          end
+        end
+
         Composer.new(definitions)
       end
 
@@ -38,7 +48,8 @@ module Clearly
       # @return [Arel::Nodes::Node, Array<Arel::Nodes::Node>]
       def query(model, hash)
         definition = select_definition_from_model(model)
-        parse_filter(definition, hash)
+        # default combiner is :and
+        parse_query(definition, :and, hash)
       end
 
       private
@@ -51,7 +62,7 @@ module Clearly
         validate_table(table)
         matches = @definitions.select { |definition| definition.table.name == table.name }
         if matches.size != 1
-          fail Clearly::Query::FilterArgumentError, "exactly one definition must match, found '#{matches.size}'"
+          fail Clearly::Query::QueryArgumentError, "exactly one definition must match, found '#{matches.size}'"
         end
 
         matches.first
@@ -68,158 +79,189 @@ module Clearly
 
       # Parse a filter hash.
       # @param [Clearly::Query::Definition] definition
-      # @param [Hash, Symbol] primary
-      # @param [Hash, Object] secondary
-      # @param [nil, Hash] extra
-      # @return [Arel::Nodes::Node, Array<Arel::Nodes::Node>]
-      def parse_filter(definition, primary, secondary = nil, extra = nil)
+      # @param [Symbol] query_key
+      # @param [Hash] query_value
+      # @return [Array<Arel::Nodes::Node>]
+      def parse_query(definition, query_key, query_value)
+        if query_value.blank? || query_value.size < 1
+          msg = "filter hash must have at least 1 entry, got '#{query_value.size}'"
+          fail Clearly::Query::QueryArgumentError.new(msg, {hash: query_value})
+        end
 
-        if primary.is_a?(Hash)
-          fail Clearly::Query::FilterArgumentError.new("filter hash must have at least 1 entry, got '#{primary.size}'", {hash: primary}) if primary.blank? || primary.size < 1
-          fail Clearly::Query::FilterArgumentError.new("extra must be null when processing a hash, got '#{extra}'", {hash: primary}) unless extra.blank?
+        logical_operators = Clearly::Query::Compose::Conditions::OPERATORS_LOGICAL
 
-          conditions = []
+        mapped_fields = definition.field_mappings.keys
+        standard_fields = definition.all_fields - mapped_fields
 
-          primary.each do |key, value|
-            result = parse_filter(definition, key, value, secondary)
-            if result.is_a?(Array)
-              conditions.push(*result)
-            else
-              conditions.push(result)
-            end
-          end
+        conditions = []
 
-          conditions
+        if logical_operators.include?(query_key)
+          # first deal with logical operators
+          condition = parse_logical_operator(definition, query_key, query_value)
+          conditions.push(condition)
 
-        elsif primary.is_a?(Symbol)
+        elsif standard_fields.include?(query_key)
+          # then cater for standard fields
+          field_conditions = parse_standard_field(definition, query_key, query_value)
+          conditions.push(*field_conditions)
 
-          case primary
-            when :and, :or
-              combiner = primary
-              filter_hash = secondary
-              result = parse_filter(definition, filter_hash)
-              condition_combine(combiner, result)
-            when :not
-              #combiner = primary
-              filter_hash = secondary
+        elsif mapped_fields.include?(query_key)
+          # then deal with mapped fields
+          field_conditions = parse_mapped_field(definition, query_key, query_value)
+          conditions.push(*field_conditions)
 
-              #fail CustomErrors::FilterArgumentError.new("'Not' must have a single combiner or field name, got #{filter_hash.size}", {hash: filter_hash}) if filter_hash.size != 1
-
-              result = parse_filter(definition, filter_hash)
-
-              #fail CustomErrors::FilterArgumentError.new("'Not' must have a single filter, got #{hash.size}.", {hash: filter_hash}) if result.size != 1
-
-              negated_conditions = [result].flatten.map { |c| compose_not(c) }
-
-              negated_conditions
-
-            when *definition.all_fields.dup.push(/\./)
-              field = primary
-              field_conditions = secondary
-              info = definition.parse_table_field(field)
-              result = parse_filter(definition, field_conditions, info)
-
-              build_subquery(definition, info, result)
-
-            when *OPERATORS
-              filter_name = primary
-              filter_value = secondary
-              info = extra
-
-              table = info[:arel_table]
-              column_name = info[:field_name]
-              valid_fields = info[:filter_settings][:fields][:valid]
-
-              custom_field = definition.build_custom_field(column_name)
-
-              if custom_field.blank?
-                condition_components(filter_name, table, column_name, valid_fields, filter_value)
-              else
-                condition_node(filter_name, custom_field, filter_value)
-              end
-
-            else
-              fail Clearly::Query::FilterArgumentError.new("unrecognised combiner or field name '#{primary}'")
-          end
+        elsif @table_names.any? { |tn| query_key.to_s.downcase.start_with?(tn) }
+          # finally deal with fields from other tables
+          field_conditions = parse_custom(definition, query_key, query_value)
+          conditions.push(field_conditions)
         else
-          fail Clearly::Query::FilterArgumentError.new("unrecognised filter component '#{primary}'")
+          fail Clearly::Query::QueryArgumentError.new("unrecognised operator or field '#{query_key}'")
+        end
+
+        conditions
+
+      end
+
+      # Parse a logical operator and it's value.
+      # @param [Clearly::Query::Definition] definition
+      # @param [Symbol] logical_operator
+      # @param [Hash] value
+      # @return [Arel::Nodes::Node]
+      def parse_logical_operator(definition, logical_operator, value)
+        validate_definition_instance(definition)
+        validate_symbol(logical_operator)
+        validate_hash(value)
+        conditions = value.map { |key, value| parse_query(definition, key, value) }
+        condition_combine(logical_operator, *conditions)
+      end
+
+      # Parse a standard field and it's conditions.
+      # @param [Clearly::Query::Definition] definition
+      # @param [Symbol] field
+      # @param [Hash] value
+      # @return [Array<Arel::Nodes::Node>]
+      def parse_standard_field(definition, field, value)
+        validate_definition_instance(definition)
+        validate_symbol(field)
+        validate_hash(value)
+        value.map do |operator, operation_value|
+          condition_components(operator, definition.table, field, definition.all_fields, operation_value)
         end
       end
 
-      # Build a subquery
+      # Parse a mapped field and it's conditions.
       # @param [Clearly::Query::Definition] definition
-      # @param [Hash] info
-      # @param [Arel::Nodes::Node, Array<Arel::Nodes::Node>] conditions
-      # @return [Arel::Nodes::Node, Array<Arel::Nodes::Node>]
-      def build_subquery(definition, info, conditions)
-        validate_hash(info)
+      # @param [Symbol] field
+      # @param [Hash] value
+      # @return [Array<Arel::Nodes::Node>]
+      def parse_custom(definition, field, value)
+        validate_definition_instance(definition)
+        validate_symbol(field)
+        fail Clearly::Query::QueryArgumentError.new('field name must contain a dot (.)') unless field.to_s.include?('.')
 
-        # ensure each condition is valid
+        validate_hash(value)
+
+        # extract table and field
+        dot_index = field.to_s.index('.')
+
+        other_table = field[0, dot_index].to_sym
+        other_model = other_table.to_s.classify.constantize
+        other_field = field[(dot_index + 1)..field.length].to_sym
+
+        table_names = definition.associations_flat.map { |a| a[:join].table_name.to_sym }
+        validate_name(other_table, table_names)
+
+        models = definition.associations_flat.map { |a| a[:join] }
+        validate_association(other_model, models)
+
+        other_definition = select_definition_from_model(other_model)
+
+        conditions = parse_standard_field(other_definition, other_field, value)
+        subquery(definition, other_definition, conditions)
+      end
+
+      # Parse a mapped field
+      # @param [Clearly::Query::Definition] definition
+      # @param [Symbol] field mapped field
+      # @param [Hash] value
+      # @return [Array<Arel::Nodes::Node>]
+      def parse_mapped_field(definition, field, value)
+        validate_definition_instance(definition)
+        mapping = definition.get_field_mapping(field)
+        validate_node_or_attribute(mapping)
+        validate_hash(value)
+        value.map do |operator, operation_value|
+          condition_node(operator, mapping, operation_value)
+        end
+      end
+
+      # Build a subquery restricting definition to conditions on other_definition.
+      # @param [Clearly::Query::Definition] definition
+      # @param [Clearly::Query::Definition] other_definition
+      # @param [Array<Arel::Nodes::Node>] conditions
+      # @return [Array<Arel::Nodes::Node>]
+      def subquery(definition, other_definition, conditions)
+        validate_definition_instance(definition)
+        validate_definition_instance(other_definition)
         [conditions].flatten.each { |c| validate_node_or_attribute(c) }
 
-        current_table = info[:arel_table]
-        model = info[:model]
+        current_model = definition.model
+        current_table = definition.table
+        current_joins = definition.joins
 
-        current_definition = select_definition_from_table(current_table)
+        other_table = other_definition.table
+        other_model = other_definition.model
+        other_joins = other_definition.joins
 
-        if current_table.name == definition.table.name
-          # don't need to build a subquery if the tables
-          # are the same, just use the conditions
-          conditions
-        else
-          # build an exist subquery to apply conditions that
-          # refer to another table
+        # build an exist subquery to apply conditions that
+        # refer to another table
 
-          subquery = current_table
+        subquery = other_definition.table
 
-          # add conditions to subquery
-          [conditions].flatten.each do |c|
-            subquery = subquery.where(c)
+        # add conditions to subquery
+        [conditions].flatten.each do |c|
+          subquery = subquery.where(c)
+        end
+
+        # add joins that provide other table access to current table
+
+
+        which_joins = current_joins
+        join_paths_index = nil
+        join_path_current_index = nil
+        join_path_other_index = nil
+        which_joins.each_with_index do |item, index|
+          join_path_current_index = item.find_index { |j| j[:join] == current_model }
+          join_path_other_index = item.find_index { |j| j[:join] == other_model }
+          if !join_path_current_index.nil? && !join_path_other_index.nil?
+            join_paths_index = index
+            break
+          end
+        end
+
+        first_index = [join_path_current_index, join_path_other_index].min
+        last_index = [join_path_current_index, join_path_other_index].max
+        relevant_joins = which_joins[join_paths_index][first_index..last_index]
+
+
+        relevant_joins.each do |j|
+          join_table = j[:join]
+          join_condition = j[:on]
+
+          # assume this is an arel_table if it doesn't respond to .arel_table
+          arel_table = join_table.respond_to?(:arel_table) ? join_table.arel_table : join_table
+
+          if arel_table.name == other_table.name && !join_condition.nil?
+            # add join as condition if this is the main table in the subquery
+            subquery = subquery.where(join_condition)
+          elsif arel_table.name != other_table.name && !join_condition.nil?
+            # add full join if this is not the main table in the subquery
+            subquery = subquery.join(arel_table).on(join_condition)
           end
 
-          # add joins to get access to the relevant tables
-          # using the associations from the model definition being used for the subquery
-          joins, _ = current_definition.build_joins(model, definition.associations)
-
-          joins.each do |j|
-            join_table = j[:join]
-            join_condition = j[:on]
-            # assume this is an arel_table if it doesn't respond to .arel_table
-            arel_table = join_table.respond_to?(:arel_table) ? join_table.arel_table : join_table
-
-            if arel_table.name == current_table.name
-              # add join as condition if this is the main table in the subquery
-              subquery = subquery.where(join_condition)
-            else
-              # add full join if this is not the main table in the subquery
-              subquery = subquery.join(arel_table).on(join_condition)
-            end
-
-          end
-
-          subquery.project(1).exists
         end
-      end
 
-      # Add conditions to a query.
-      # @param [ActiveRecord::Relation] query
-      # @param [Array<Arel::Nodes::Node>] conditions
-      # @return [ActiveRecord::Relation] the modified query
-      def apply_conditions(query, conditions)
-        conditions.each do |condition|
-          query = apply_condition(query, condition)
-        end
-        query
-      end
-
-      # Add condition to a query.
-      # @param [ActiveRecord::Relation] query
-      # @param [Arel::Nodes::Node] condition
-      # @return [ActiveRecord::Relation] the modified query
-      def apply_condition(query, condition)
-        validate_query(query)
-        validate_condition(condition)
-        query.where(condition)
+        subquery.project(1).exists
       end
 
     end

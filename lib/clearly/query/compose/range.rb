@@ -12,7 +12,7 @@ module Clearly
         def parse_interval(value)
           range_regex = /(\[|\()(.*),(.*)(\)|\])/i
           matches = value.match(range_regex)
-          fail Clearly::Query::FilterArgumentError.new(
+          fail Clearly::Query::QueryArgumentError.new(
                    "range string must be in the form (|[.*,.*]|), got '#{value}'") unless matches
 
           captures = matches.captures
@@ -29,7 +29,7 @@ module Clearly
         # @return [Hash]
         def parse_range(hash)
           unless hash.is_a?(Hash)
-            fail Clearly::Query::FilterArgumentError.new(
+            fail Clearly::Query::QueryArgumentError.new(
                      "range filter must be {'from': 'value', 'to': 'value'} " +
                          "or {'interval': '(|[.*,.*]|)'} got '#{hash}'", {hash: hash})
 
@@ -40,20 +40,20 @@ module Clearly
           interval = hash[:interval]
 
           if !from.blank? && !to.blank? && !interval.blank?
-            fail Clearly::Query::FilterArgumentError.new(
+            fail Clearly::Query::QueryArgumentError.new(
                      "range filter must use either ('from' and 'to') or ('interval'), not both", {hash: hash})
           elsif from.blank? && !to.blank?
-            fail Clearly::Query::FilterArgumentError.new(
+            fail Clearly::Query::QueryArgumentError.new(
                      "range filter missing 'from'", {hash: hash})
           elsif !from.blank? && to.blank?
-            fail Clearly::Query::FilterArgumentError.new(
+            fail Clearly::Query::QueryArgumentError.new(
                      "range filter missing 'to'", {hash: hash})
           elsif !from.blank? && !to.blank?
             parse_interval("[#{from},#{to})")
           elsif !interval.blank?
             parse_interval(interval)
           else
-            fail Clearly::Query::FilterArgumentError.new(
+            fail Clearly::Query::QueryArgumentError.new(
                      "range filter did not contain ('from' and 'to') or ('interval'), got '#{hash}'", {hash: hash})
           end
         end

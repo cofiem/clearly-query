@@ -45,12 +45,19 @@ For example:
 and
 
     # model/customer.rb
-      def self.clearly_query_def
+        def self.clearly_query_def
         {
             fields: {
                 valid: [:name, :last_contact_at],
                 text: [:name],
-                mappings: []
+                mappings: [
+                    {
+                        name: :title,
+                        value: Clearly::Query::Helper.string_concat(
+                            Customer.arel_table[:name],
+                            Arel::Nodes.build_quoted(' title'))
+                    }
+                ]
             },
             associations: [
                 {
@@ -75,7 +82,11 @@ See the [query hash specification](SPEC.md) for a comprehensive overview.
 For example:
 
     composer = Clearly::Query::Composer.from_active_record
-    composer.query(Customer, {name: {contains: 'test'}})
+    query_hash = {and: {name: {contains: 'test'}}} # from e.g. HTTP request
+    cleaned_query_hash = Clearly::Query::Cleaner.new.do(query_hash)
+    model = Customer
+    conditions = composer.query(model, cleaned_query_hash)
+    query = model.where(conditions)
 
 ## Contributing
 

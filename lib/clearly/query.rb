@@ -17,5 +17,6 @@ require 'clearly/query/compose/conditions'
 
 require 'clearly/query/composer'
 require 'clearly/query/definition'
+require 'clearly/query/graph'
 
 

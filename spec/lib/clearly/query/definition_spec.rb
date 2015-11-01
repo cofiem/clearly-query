@@ -5,18 +5,18 @@ describe Clearly::Query::Definition do
 
   it 'is not valid with nil model' do
     expect {
-      Clearly::Query::Definition.new(nil, Customer.clearly_query_def)
-    }.to raise_error(Clearly::Query::FilterArgumentError, "value must not be empty, got ''")
+      Clearly::Query::Definition.new({hash: Customer.clearly_query_def})
+    }.to raise_error(Clearly::Query::QueryArgumentError, 'could not build definition from options')
   end
 
   it 'is not valid with nil hash' do
     expect {
-      Clearly::Query::Definition.new(Customer, nil)
-    }.to raise_error(Clearly::Query::FilterArgumentError, "value must not be empty, got ''")
+      Clearly::Query::Definition.new({model: Customer})
+    }.to raise_error(Clearly::Query::QueryArgumentError, "value must not be empty, got ''")
   end
 
   it 'can be instantiated' do
-    Clearly::Query::Definition.new(Customer, Customer.clearly_query_def)
+    Clearly::Query::Definition.new({model:Customer, hash: Customer.clearly_query_def})
   end
 
 
