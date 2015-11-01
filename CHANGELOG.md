@@ -6,7 +6,7 @@ and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 
 ## Unreleased
 
-## Release [v0.3.0-pre](https://github.com/cofiem/clearly-query/releases/tag/v0.3.0-pre) (2015-11-01)
+## Release [v0.3.1-pre](https://github.com/cofiem/clearly-query/releases/tag/v0.3.1-pre) (2015-11-01)
 
 ### Added
  - new DFS graph traversal for calculating joins between tables
