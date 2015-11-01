@@ -1,6 +1,6 @@
 # Query Hash Specification
 
-Inspired by [elastic search filters](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-filters.html).
+Inspired by [Elastic Search filters](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-filters.html).
 
 ## Available Filter Operators
 
@@ -60,10 +60,10 @@ A simple range can be specified from an inclusive lower bound and to an exclusiv
     
 A more complex range can be specified using a special format which allows for inclusive or exclusive bounds.
 
-       Operator  |              Query hash               |                           SQL
-    -------------|---------------------------------------|----------------------------------------------------------
-    interval     | {attr: {interval: '(value1,value2]'}} | "table"."attr" > 'value1' AND "table"."attr" <= 'value2'
-    not_interval | {attr: {interval: '(value1,value2]'}} | ("table"."attr" <= 'value1' OR "table"."attr" > 'value2')
+       Operator  |                Query hash                 |                           SQL
+    -------------|-------------------------------------------|----------------------------------------------------------
+    interval     | {attr: {interval: '(value1,value2]'}}     | "table"."attr" > 'value1' AND "table"."attr" <= 'value2'
+    not_interval | {attr: {not_interval: '(value1,value2]'}} | ("table"."attr" <= 'value1' OR "table"."attr" > 'value2')
 
 The `interval` must match the regex  `/(\[|\()(.*),(.*)(\)|\])/`, 
 where `(` or `)` indicates exclusive and `[` or `]` indicates inclusive.

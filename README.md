@@ -32,7 +32,7 @@ Or install it yourself as:
 ## Usage
 
 There are two main public classes in this gem. 
-The Definition class makes use of a settings declared in a model.
+The Definition class makes use of settings declared in a model.
 The Composer converts a hash of options into an Arel query.
 
 ### [Clearly::Query::Definition](./lib/clearly/query/definition.rb)
