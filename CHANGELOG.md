@@ -6,6 +6,8 @@ and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 
 ## Unreleased
 
+## Release [0.3.0](https://github.com/cofiem/clearly-query/releases/tag/0.3.0) (2015-11-01)
+
 ### Added
  - new DFS graph traversal for calculating joins between tables
  - additional tests for Composer
@@ -13,7 +15,7 @@ and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 ### Changed
  - composer and definition functionality redistributed to be more obvious and have simpler methods
 
-## 2015-10-27 - First release [0.2.0](https://github.com/cofiem/clearly-query/releases/tag/0.2.0)
+## Release [0.2.0](https://github.com/cofiem/clearly-query/releases/tag/0.2.0) (2015-10-27)
 
 ### Added
 
