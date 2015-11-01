@@ -56,7 +56,7 @@ A simple range is inclusive lower bound and exclusive upper bound.
               Operator      |                      Query hash                     |                             SQL
     ------------------------|-----------------------------------------------------|------------------------------------------------------------------
     range, in_range         | {attr: {range: {from: 'value1', to: 'value2'}}}     | "table"."attr" >= 'value1' AND "table"."attr" < 'value2'
-    not_range, not_in_range | {attr: {not_range: {from: 'value1', to: 'value2'}}} | ("table"."attr" > 'value1' OR "table"."attr" >= 'value2')
+    not_range, not_in_range | {attr: {not_range: {from: 'value1', to: 'value2'}}} | ("table"."attr" < 'value1' OR "table"."attr" >= 'value2')
     
 A more complex range can be specified using a regex which allows for inclusive or exclusive bounds.
 
