@@ -17,7 +17,7 @@ describe Clearly::Query::Composer do
     invalid_composer = Clearly::Query::Composer.new([customer_def, customer_def])
     query = cleaner.do({})
     expect {
-      invalid_composer.query(Customer, query)
+      invalid_composer.conditions(Customer, query)
     }.to raise_error(Clearly::Query::QueryArgumentError, "exactly one definition must match, found '2'")
   end
 
@@ -36,13 +36,13 @@ describe Clearly::Query::Composer do
       it 'is given an empty query' do
         query = cleaner.do({})
         expect {
-          composer.query(Customer, query)
+          composer.conditions(Customer, query)
         }.to raise_error(Clearly::Query::QueryArgumentError, "filter hash must have at least 1 entry, got '0'")
       end
 
       it 'uses a regex operator using sqlite' do
         expect {
-          conditions = composer.query(Product, {name: {regex: 'test'}})
+          conditions = composer.conditions(Product, {name: {regex: 'test'}})
           query = Product.all
           conditions.each { |c| query = query.where(c) }
           expect(query.to_a).to eq([])
@@ -55,7 +55,7 @@ describe Clearly::Query::Composer do
 
         it 'contains an unrecognised filter' do
           expect {
-            composer.query(Customer, {
+            composer.conditions(Customer, {
                         or: {
                             name: {
                                 not_a_real_filter: 'Hello'
@@ -67,7 +67,7 @@ describe Clearly::Query::Composer do
 
         it 'has no entry' do
           expect {
-            composer.query(Customer, {
+            composer.conditions(Customer, {
                         or: {
                             name: {
 
@@ -79,7 +79,7 @@ describe Clearly::Query::Composer do
 
         it 'has not with no entries' do
           expect {
-            composer.query(Customer, {
+            composer.conditions(Customer, {
                         not: {
                         }
                     })
@@ -88,7 +88,7 @@ describe Clearly::Query::Composer do
 
         it 'has or with no entries' do
           expect {
-            composer.query(Customer, {
+            composer.conditions(Customer, {
                         or: {
                         }
                     })
@@ -97,7 +97,7 @@ describe Clearly::Query::Composer do
 
         it 'has not with more than one field' do
           expect {
-            composer.query(Product, {
+            composer.conditions(Product, {
                         not: {
                             name: {
                                 contains: 'Hello'
@@ -112,7 +112,7 @@ describe Clearly::Query::Composer do
 
         it 'has not with more than one filter' do
           expect {
-            composer.query(Product, {
+            composer.conditions(Product, {
                         not: {
                             name: {
                                 contains: 'Hello',
@@ -125,7 +125,7 @@ describe Clearly::Query::Composer do
 
         it 'has a combiner that is not recognised with valid filters' do
           expect {
-            composer.query(Product, {
+            composer.conditions(Product, {
                         not_a_valid_combiner: {
                             name: {
                                 contains: 'Hello'
@@ -140,7 +140,7 @@ describe Clearly::Query::Composer do
 
         it "has a range missing 'from'" do
           expect {
-            composer.query(Customer, {
+            composer.conditions(Customer, {
                         and: {
                             name: {
                                 range: {
@@ -154,7 +154,7 @@ describe Clearly::Query::Composer do
 
         it "has a range missing 'to'" do
           expect {
-            composer.query(Product, {
+            composer.conditions(Product, {
                         and: {
                             code: {
                                 range: {
@@ -168,7 +168,7 @@ describe Clearly::Query::Composer do
 
         it 'has a range with from/to and interval' do
           expect {
-            composer.query(Customer, {
+            composer.conditions(Customer, {
                         and: {
                             name: {
                                 range: {
@@ -183,7 +183,7 @@ describe Clearly::Query::Composer do
 
         it 'has a range with no recognised properties' do
           expect {
-            composer.query(Customer, {
+            composer.conditions(Customer, {
                         and: {
                             name: {
                                 range: {
@@ -197,7 +197,7 @@ describe Clearly::Query::Composer do
 
         it 'has a property that has no filters' do
           expect {
-            composer.query(Customer, {
+            composer.conditions(Customer, {
                         or: {
                             name: {
                             }
@@ -216,7 +216,7 @@ describe Clearly::Query::Composer do
 
           expect {
             query = cleaner.do(filter_params)
-            composer.query(Customer, query)
+            composer.conditions(Customer, query)
           }.to raise_error(Clearly::Query::QueryArgumentError, 'array values cannot be hashes')
         end
 
@@ -224,7 +224,7 @@ describe Clearly::Query::Composer do
           filter_params = {"name" => {"inRange" => "(5,6)"}}
           expect {
             query = cleaner.do(filter_params)
-            composer.query(Customer, query)
+            composer.conditions(Customer, query)
           }.to raise_error(Clearly::Query::QueryArgumentError, "range filter must be {'from': 'value', 'to': 'value'} or {'interval': '(|[.*,.*]|)'} got '(5,6)'")
         end
 
@@ -233,7 +233,7 @@ describe Clearly::Query::Composer do
     context 'succeeds when it' do
       it 'is given a valid query without combiners' do
         hash = cleaner.do({name: {contains: 'test'}})
-        conditions = composer.query(Customer, hash)
+        conditions = composer.conditions(Customer, hash)
         expect(conditions.size).to eq(1)
 
         # sqlite only supports LIKE
@@ -246,7 +246,7 @@ describe Clearly::Query::Composer do
 
       it 'is given a valid query with or combiner' do
         hash = cleaner.do({or: {name: {contains: 'test'}, code: {eq: 4}}})
-        conditions = composer.query(Product, hash)
+        conditions = composer.conditions(Product, hash)
         expect(conditions.size).to eq(1)
 
         expect(conditions.first.to_sql).to eq("(\"products\".\"name\" LIKE '%test%' OR \"products\".\"code\" = '4')")
@@ -258,7 +258,7 @@ describe Clearly::Query::Composer do
 
       it 'is given a valid query with camel cased keys' do
         hash = cleaner.do({name: {does_not_start_with: 'test'}})
-        conditions = composer.query(Customer, hash)
+        conditions = composer.conditions(Customer, hash)
         expect(conditions.size).to eq(1)
 
         expect(conditions.first.to_sql).to eq("\"customers\".\"name\" NOT LIKE 'test%'")
@@ -270,7 +270,7 @@ describe Clearly::Query::Composer do
 
       it 'is given a valid range query that excludes the start and includes the end' do
         hash = cleaner.do({name: {notInRange: {interval: '(2,5]'}}})
-        conditions = composer.query(Customer, hash)
+        conditions = composer.conditions(Customer, hash)
         expect(conditions.size).to eq(1)
         
         expect(conditions.first.to_sql).to eq("(\"customers\".\"name\" <= '2' OR \"customers\".\"name\" > '5')")
@@ -282,7 +282,7 @@ describe Clearly::Query::Composer do
 
       it 'is given a valid query that uses a table one step away' do
         hash = cleaner.do({and: {name: {contains: 'test'}, 'orders.shipped_at' => {lt: '2015-10-24'}}})
-        conditions = composer.query(Customer, hash)
+        conditions = composer.conditions(Customer, hash)
         expect(conditions.size).to eq(1)
 
         expected = "\"customers\".\"name\" LIKE '%test%' AND EXISTS (SELECT 1 FROM \"orders\" WHERE \"orders\".\"shipped_at\" < '2015-10-24' AND \"orders\".\"customer_id\" = \"customers\".\"id\")"
@@ -298,7 +298,7 @@ describe Clearly::Query::Composer do
         # instead of the hash in Definition#parse_table_field
 
         hash = cleaner.do({and: {name: {contains: 'test'}, 'customers.name' => {lt: '2015-10-24'}}})
-        conditions = composer.query(Part, hash)
+        conditions = composer.conditions(Part, hash)
         expect(conditions.size).to eq(1)
 
         expected = "\"parts\".\"name\" LIKE '%test%' AND EXISTS (SELECT 1 FROM \"customers\" INNER JOIN \"parts_products\" ON \"products\".\"id\" = \"parts_products\".\"product_id\" INNER JOIN \"products\" ON \"products\".\"id\" = \"orders_products\".\"product_id\" INNER JOIN \"orders_products\" ON \"orders\".\"id\" = \"orders_products\".\"order_id\" INNER JOIN \"orders\" ON \"orders\".\"customer_id\" = \"customers\".\"id\" WHERE \"customers\".\"name\" < '2015-10-24' AND \"customers\".\"id\" = \"orders\".\"customer_id\")"
@@ -311,7 +311,7 @@ describe Clearly::Query::Composer do
 
       it 'is given a valid query that uses a custom field mapping' do
         hash = cleaner.do({and: {shipped_at: {lt: '2015-10-24'}, title: {does_not_start_with: 'alice'}}})
-        conditions = composer.query(Order, hash)
+        conditions = composer.conditions(Order, hash)
         expect(conditions.size).to eq(1)
 
         expected = "\"orders\".\"shipped_at\" < '2015-10-24' AND (SELECT \"customers\".\"name\" FROM \"customers\" WHERE \"customers\".\"id\" = \"orders\".\"customer_id\") || ' (' || CASE WHEN \"orders\".\"shipped_at\" IS NULL THEN 'not shipped' ELSE \"orders\".\"shipped_at\" END || ')' NOT LIKE 'alice%'"
@@ -355,7 +355,7 @@ describe Clearly::Query::Composer do
         end
 
         hash = cleaner.do({and: {name: operator_hash}})
-        conditions = composer.query(Product, hash)
+        conditions = composer.conditions(Product, hash)
         expect(conditions.size).to eq(1)
 
         expected = {

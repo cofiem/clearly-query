@@ -13,7 +13,7 @@ module Clearly
 
           case adapter
             when 'mysql'
-              Arel::Nodes::NamedFunction.new('concat', *args)
+              named_function('concat', args)
             when 'sqlserver'
               string_concat_infix('+', *args)
             when 'postgres'
@@ -42,6 +42,33 @@ module Clearly
           end
 
           result
+        end
+
+        # Construct a SQL literal.
+        # This is useful for sql that is too complex for Arel.
+        # @param [String] value
+        # @return [Arel::Nodes::Node]
+        def sql_literal(value)
+          Arel::Nodes::SqlLiteral.new(value)
+        end
+
+        # Construct a SQL quoted string.
+        # This is used for fragments of SQL.
+        # @param [String] value
+        # @return [Arel::Nodes::Node]
+        def sql_quoted(value)
+          Arel::Nodes.build_quoted(value)
+        end
+
+        # Construct a SQL EXISTS clause.
+        # @param [Arel::Nodes::Node] node
+        # @return [Arel::Nodes::Node]
+        def exists(node)
+          Arel::Nodes::Exists.new(node)
+        end
+
+        def named_function(name, expression, function_alias = nil)
+          Arel::Nodes::NamedFunction.new(name, expression, function_alias)
         end
 
       end

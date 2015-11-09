@@ -6,6 +6,11 @@ and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 
 ## Unreleased
 
+### Changed
+ - Two methods for Composer: `#query` to compose an ActiveRecord query and `#conditions` to compose an array of Arel conditions.
+ - Hash cleaner applied within Composer methods.
+ - Graph traversal results are now cached.
+
 ### Fixed
  - fixed a number of typos in SPEC and README.
 

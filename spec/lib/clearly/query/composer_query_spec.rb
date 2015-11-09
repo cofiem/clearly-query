@@ -11,10 +11,8 @@ describe Clearly::Query::Composer do
   it 'finds the only product' do
     product = Product.create!(product_attributes)
     query_hash = cleaner.do({name: {contains: 'cup'}})
-    result = composer.query(Product, query_hash)
-    expect(result.size).to eq(1)
+    query_ar = composer.query(Product, query_hash)
 
-    query_ar = Product.where(result[0])
     expect(query_ar.count).to eq(1)
 
     result_item = query_ar.to_a[0]
@@ -34,10 +32,8 @@ describe Clearly::Query::Composer do
     end
 
     query_hash = cleaner.do({name: {contains: '5'}})
-    result = composer.query(Product, query_hash)
-    expect(result.size).to eq(1)
+    query_ar = composer.query(Product, query_hash)
 
-    query_ar = Product.where(result[0])
     expect(query_ar.count).to eq(1)
 
     result_item = query_ar.to_a[0]

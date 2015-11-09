@@ -60,23 +60,6 @@ module Clearly
                 OPERATORS_REGEX +
                 OPERATORS_SPECIAL
 
-        # Add conditions to a query.
-        # @param [ActiveRecord::Relation] query
-        # @param [Array<Arel::Nodes::Node>, Arel::Nodes::Node] conditions
-        # @return [ActiveRecord::Relation] the modified query
-        def condition_apply(query, conditions)
-          conditions = [conditions].flatten
-          validate_not_blank(conditions)
-          validate_array(conditions)
-
-          conditions.each do |condition|
-            validate_condition(condition)
-            query = query.where(condition)
-          end
-
-          query
-        end
-
         # Combine multiple conditions.
         # @param [Symbol] combiner
         # @param [Arel::Nodes::Node, Array<Arel::Nodes::Node>] conditions

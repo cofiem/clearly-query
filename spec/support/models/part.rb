@@ -14,7 +14,7 @@ class Part < ActiveRecord::Base
                     name: :title,
                     value: Clearly::Query::Helper.string_concat(
                         Part.arel_table[:code],
-                        Arel::Nodes.build_quoted(' '),
+                        Clearly::Query::Helper.sql_quoted(' '),
                         Part.arel_table[:manufacturer])
                 }
             ]

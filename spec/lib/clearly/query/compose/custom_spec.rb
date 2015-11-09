@@ -9,8 +9,6 @@ describe Clearly::Query::Compose::Custom do
   end
 
   it 'build expected sql' do
-
-
     custom = Clearly::Query::Compose::Custom.new
 
     table = product_def.table
