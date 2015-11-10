@@ -76,4 +76,19 @@ describe Clearly::Query::Composer do
     expect(result_item.customer_id).to eq(order_pending.customer_id)
   end
 
+  it 'finds the correct order comparing dates' do
+    customer = Customer.create!(customer_attributes)
+    order1 = Order.create!(customer: customer, shipped_at: '2015-11-09 11:00:01')
+    order2 = Order.create!(customer: customer, shipped_at: '2015-11-09 11:00:00')
+
+    query_hash = cleaner.do({shipped_at: {gteq: '2015-11-09 11:00:01'}})
+    query_ar = composer.query(Order, query_hash)
+
+    expect(query_ar.count).to eq(1)
+
+    result_item = query_ar.to_a[0]
+    expect(result_item.shipped_at).to eq(order1.shipped_at)
+    expect(result_item.customer_id).to eq(order1.customer_id)
+  end
+
 end

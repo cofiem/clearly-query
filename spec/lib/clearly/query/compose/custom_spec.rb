@@ -2,13 +2,25 @@ require 'spec_helper'
 
 describe Clearly::Query::Compose::Custom do
   include_context 'shared_setup'
+
+  # for access to compose_and, relation_none, and relation_all
   include Clearly::Query::Compose::Core
 
   it 'can be instantiated' do
     Clearly::Query::Compose::Custom.new
   end
 
-  it 'build expected sql' do
+  it 'constructs sql for select all' do
+    query = self.send(:relation_all, Order).where(customer_id: 10)
+    expect(query.to_sql).to eq('SELECT "orders".* FROM "orders" WHERE "orders"."customer_id" = 10')
+  end
+
+  it 'constructs sql for select none' do
+    query = self.send(:relation_none, Order).where(customer_id: 10)
+    expect(query.to_sql).to eq('')
+  end
+
+  it 'builds expected sql' do
     custom = Clearly::Query::Compose::Custom.new
 
     table = product_def.table

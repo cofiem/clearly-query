@@ -70,13 +70,36 @@ and
                     available: true,
                     associations: []
                 }
-            ],
-            defaults: {
-                order_by: :created_at,
-                direction: :desc
-            }
+            ]
         }
       end
+
+The available specification keys are detailed below.
+
+All field names that are available to include in a query hash:
+
+    {fields: { valid: [<Symbols>, ...] } }
+
+All fields that contain text (e.g. `varchar`, `text`) that are available to include in a query hash. 
+This must be a subset (or equal) to the `valid` field array:
+
+    {fields: { text:  [<Symbols>, ...] } }
+
+Field mappings that specify a calculated value:
+
+    {fields: { mappings: [{ name: <Symbol>, value: <Arel::Nodes::Node, String, Arel::Attribute, others...> }, ... ]  } }
+
+Associations between tables, and whether the association is available in queries or not:
+
+    {
+        associations: [
+            { 
+                join: <Model or Arel Table>,
+                on: <Arel fragment>,
+                available: <true or false>, # is this association available to be used in queries?
+                associations: [ <further associations for this table>,  ... ]
+            }
+    }
 
 ### [Clearly::Query::Composer](./lib/clearly/query/composer.rb)
 
