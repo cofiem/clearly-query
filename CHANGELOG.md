@@ -48,20 +48,9 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 
 ## Change log categories
 
-### Added
-new features
-
-### Changed
-changes in existing functionality
-
-### Deprecated
-once-stable features removed in upcoming releases
-
-### Removed
-deprecated features removed in this release
-
-### Fixed
-bug fixes
-
-### Security
-vulnerabilities or other problems that should be highlighted
+ - Added: new features
+ - Changed: changes in existing functionality
+ - Deprecated: once-stable features removed in upcoming releases
+ - Removed: deprecated features removed in this release
+ - Fixed: bug fixes
+ - Security: vulnerabilities or other problems that should be highlighted
