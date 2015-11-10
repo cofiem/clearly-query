@@ -1,10 +1,10 @@
 # Query Hash Specification
 
-Inspired by [elastic search filters](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-filters.html).
+Inspired by [Elastic Search filters](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-filters.html).
 
 ## Available Filter Operators
 
-### Combine Operators
+### Combine / logical Operators
 
      Operator |   Query hash   |       SQL
     ----------|----------------|---------------------
@@ -12,13 +12,14 @@ Inspired by [elastic search filters](http://www.elasticsearch.org/guide/en/elast
     or        | {or:  { ... }} | WHERE ... OR  (...)
     not       | {not: { ... }} | WHERE ... NOT (...)
     
-Implicit `and` is used when no combine operator is specified.
+An implicit `and` operator is used when no logical operator is specified.
 
 ### Filter Operators
 
-Filter comparison operator has multiple forms to help with constructing queries that read more 'naturally'.
-Be aware that it is possible operators may be 'case sensitive by default 
-for unicode characters that are beyond the ASCII range'. For example, in [sqlite](https://www.sqlite.org/lang_expr.html).
+All filter operators have multiple forms to help with constructing queries that read more 'naturally'.
+Be aware that it is possible operators may be 
+'case sensitive by default for unicode characters that are beyond the ASCII range'. 
+For example, in [sqlite](https://www.sqlite.org/lang_expr.html).
 
 #### Comparison Operators
 
@@ -41,7 +42,6 @@ Comparison operators are self-explanatory.
 
 There are special operators for `null` comparisons. 
 The only valid values for these operators is `true` or `false`.
-Any other value is invalid.
 
             Operator       |         Query hash         |        SQL
     -----------------------|----------------------------|---------------------------------
@@ -51,30 +51,31 @@ Any other value is invalid.
 
 ##### Range
 
-A simple range is inclusive lower bound and exclusive upper bound.
+A simple range can be specified from an inclusive lower bound and to an exclusive upper bound.
 
               Operator      |                      Query hash                     |                             SQL
     ------------------------|-----------------------------------------------------|------------------------------------------------------------------
     range, in_range         | {attr: {range: {from: 'value1', to: 'value2'}}}     | "table"."attr" >= 'value1' AND "table"."attr" < 'value2'
-    not_range, not_in_range | {attr: {not_range: {from: 'value1', to: 'value2'}}} | ("table"."attr" > 'value1' OR "table"."attr" >= 'value2')
+    not_range, not_in_range | {attr: {not_range: {from: 'value1', to: 'value2'}}} | ("table"."attr" < 'value1' OR "table"."attr" >= 'value2')
     
-A more complex range can be specified using a regex which allows for inclusive or exclusive bounds.
+A more complex range can be specified using a special format which allows for inclusive or exclusive bounds.
 
-       Operator  |              Query hash               |                           SQL
-    -------------|---------------------------------------|----------------------------------------------------------
-    interval     | {attr: {interval: '(value1,value2]'}} | "table"."attr" > 'value1' AND "table"."attr" <= 'value2'
-    not_interval | {attr: {interval: '(value1,value2]'}} | ("table"."attr" <= 'value1' OR "table"."attr" > 'value2')
+       Operator  |                Query hash                 |                           SQL
+    -------------|-------------------------------------------|----------------------------------------------------------
+    interval     | {attr: {interval: '(value1,value2]'}}     | "table"."attr" > 'value1' AND "table"."attr" <= 'value2'
+    not_interval | {attr: {not_interval: '(value1,value2]'}} | ("table"."attr" <= 'value1' OR "table"."attr" > 'value2')
 
-The `interval` must match the regex  `/(\[|\()(.*),(.*)(\)|\])/` 
+The `interval` must match the regex  `/(\[|\()(.*),(.*)(\)|\])/`, 
 where `(` or `)` indicates exclusive and `[` or `]` indicates inclusive.
 Specifying `[value1,value2]` is equivalent to `BETWEEN value1 AND value2`.
 
 Any spaces between the brackets will be included in the value.
 The result of including commas (`,`) in either value is undefined. 
+Use a single comma for separating the two values.
 
-##### Arrays
+##### Array
 
-An array of values to match the attribute value exactly.
+An array of values to match the attribute value. Compared using an exact match (which may be case sensitive, depending on the database).
 
     Operator |            Query hash               |                             SQL
     ---------|-------------------------------------|-----------------------------------------------
@@ -83,11 +84,11 @@ An array of values to match the attribute value exactly.
     
 ##### Contents Match
 
-Match the contents of a model attributes. 
-These comparison operators are case insensitive where possible (usually depends on database).
-It is possible to match at the entire content, at the start of the content, or at the end.
+A variety of ways to match the contents of model attribute content. 
+These comparison operators are case insensitive where possible (again, depends on the database).
+It is possible to match the entire content, at the start of the content, at the end, or using a regular expression.
 
-Regular expression match **may not be supported by all databases**.
+Regular expression match may not be supported by all databases.
 
                         Operator                          |           Query hash              |                SQL
     ------------------------------------------------------|-----------------------------------|-----------------------------------------------

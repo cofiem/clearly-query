@@ -14,7 +14,7 @@ class Customer < ActiveRecord::Base
                     name: :title,
                     value: Clearly::Query::Helper.string_concat(
                         Customer.arel_table[:name],
-                        Arel::Nodes.build_quoted(' title'))
+                        Clearly::Query::Helper.sql_quoted(' title'))
                 }
             ]
         },
@@ -53,11 +53,7 @@ class Customer < ActiveRecord::Base
                     }
                 ]
             }
-        ],
-        defaults: {
-            order_by: :created_at,
-            direction: :desc
-        }
+        ]
     }
   end
 end

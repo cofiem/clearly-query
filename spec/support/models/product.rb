@@ -15,11 +15,11 @@ class Product < ActiveRecord::Base
                     name: :title,
                     value: Clearly::Query::Helper.string_concat(
                         Product.arel_table[:brand],
-                        Arel::Nodes.build_quoted(' '),
+                        Clearly::Query::Helper.sql_quoted(' '),
                         Product.arel_table[:name],
-                        Arel::Nodes.build_quoted(' ('),
+                        Clearly::Query::Helper.sql_quoted(' ('),
                         Product.arel_table[:code],
-                        Arel::Nodes.build_quoted(')'))
+                        Clearly::Query::Helper.sql_quoted(')'))
                 }
             ]
         },
@@ -57,11 +57,7 @@ class Product < ActiveRecord::Base
                     }
                 ]
             }
-        ],
-        defaults: {
-            order_by: :name,
-            direction: :asc
-        }
+        ]
     }
   end
 end

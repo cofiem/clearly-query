@@ -4,18 +4,6 @@ module Clearly
     # Provides common validations for composing queries.
     module Validate
 
-      # Validate query, table, and column values.
-      # @param [Arel::Query] query
-      # @param [Arel::Table] table
-      # @param [Symbol] column_name
-      # @param [Array<Symbol>] allowed
-      # @return [void]
-      def validate_query_table_column(query, table, column_name, allowed)
-        validate_query(query)
-        validate_table(table)
-        validate_name(column_name, allowed)
-      end
-
       # Validate table and column values.
       # @param [Arel::Table] table
       # @param [Symbol] column_name
@@ -37,15 +25,6 @@ module Clearly
 
         fail Clearly::Query::QueryArgumentError, "models allowed must be an Array, got '#{models_allowed}'" unless models_allowed.is_a?(Array)
         fail Clearly::Query::QueryArgumentError, "model must be in '#{models_allowed}', got '#{model}'" unless models_allowed.include?(model)
-      end
-
-      # Validate query and hash values.
-      # @param [ActiveRecord::Relation] query
-      # @param [Hash] hash
-      # @return [void]
-      def validate_query_hash(query, hash)
-        validate_query(query)
-        validate_hash(hash)
       end
 
       # Validate table value.
@@ -154,7 +133,6 @@ module Clearly
       # @raise [FilterArgumentError] if value is not a valid Hash.
       # @return [void]
       def validate_hash(value)
-        validate_not_blank(value)
         fail Clearly::Query::QueryArgumentError, "value must be a Hash, got '#{value}'" unless value.is_a?(Hash)
       end
 
@@ -181,7 +159,7 @@ module Clearly
         fail Clearly::Query::QueryArgumentError, "value must be a boolean, got '#{value}'" if !value.is_a?(TrueClass) && !value.is_a?(FalseClass)
       end
 
-      # Escape wildcards in like value..
+      # Escape wildcards in LIKE value.
       # @param [String] value
       # @return [String] sanitized value
       def sanitize_like_value(value)
@@ -247,16 +225,17 @@ module Clearly
       # @param [Hash] value
       # @return [void]
       def validate_definition(value)
+        validate_not_blank(value)
         validate_hash(value)
 
         # fields
+        validate_not_blank(value[:fields])
         validate_hash(value[:fields])
 
         validate_not_blank(value[:fields][:valid])
         validate_array(value[:fields][:valid])
         validate_array_items(value[:fields][:valid])
 
-        validate_not_blank(value[:fields][:text])
         validate_array(value[:fields][:text])
         validate_array_items(value[:fields][:text])
 
@@ -264,6 +243,7 @@ module Clearly
         validate_array(value[:fields][:mappings])
 
         value[:fields][:mappings].each do |mapping|
+          validate_not_blank(mapping)
           validate_hash(mapping)
           validate_symbol(mapping[:name])
           validate_not_blank(mapping[:value])
@@ -271,9 +251,6 @@ module Clearly
 
         # associations
         validate_spec_association(value[:associations])
-
-        # defaults
-        validate_hash(value[:defaults])
       end
 
       # Validate association specification
@@ -283,6 +260,7 @@ module Clearly
         validate_array(value)
 
         value.each do |association|
+          validate_not_blank(association)
           validate_hash(association)
           validate_not_blank(association[:join])
           validate_not_blank(association[:on])

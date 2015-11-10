@@ -6,7 +6,7 @@ require 'clearly/query/version'
 Gem::Specification.new do |spec|
   spec.name          = 'clearly-query'
   spec.version       = Clearly::Query::VERSION
-  spec.authors       = ['@cofiem']
+  spec.authors       = ['Mark Cottman-Fields']
   spec.email         = ['cofiem@gmail.com']
   spec.summary       = %q{A library for constructing an sql query from a hash.}
   spec.description   = %q{A library for constructing an sql query from a hash. Uses a strict, yet flexible specification.}

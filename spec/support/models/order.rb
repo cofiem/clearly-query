@@ -14,12 +14,15 @@ class Order < ActiveRecord::Base
                 {
                     name: :title,
                     value: Clearly::Query::Helper.string_concat(
-                        Customer.arel_table
-                            .where(Customer.arel_table[:id].eq(Order.arel_table[:customer_id]))
-                            .project(Customer.arel_table[:name]),
-                        Arel::Nodes.build_quoted(' ('),
-                        Arel::Nodes::SqlLiteral.new('CASE WHEN "orders"."shipped_at" IS NULL THEN \'not shipped\' ELSE "orders"."shipped_at" END'),
-                        Arel::Nodes.build_quoted(')'))
+                        Clearly::Query::Helper.sql_literal(
+                            '(' +
+                                Customer.arel_table
+                                    .where(Customer.arel_table[:id].eq(Order.arel_table[:customer_id]))
+                                    .project(Customer.arel_table[:name]).to_sql + ')'),
+                        Clearly::Query::Helper.sql_quoted(' ('),
+                        Clearly::Query::Helper.sql_literal('(CASE WHEN "orders"."shipped_at" IS NULL THEN \'not shipped\' ELSE "orders"."shipped_at" END)'),
+                        Clearly::Query::Helper.sql_quoted(') ')
+                    )
                 }
             ]
         },
@@ -56,11 +59,7 @@ class Order < ActiveRecord::Base
                     }
                 ]
             }
-        ],
-        defaults: {
-            order_by: :created_at,
-            direction: :desc
-        }
+        ]
     }
   end
 end

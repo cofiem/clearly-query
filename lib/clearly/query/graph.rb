@@ -18,15 +18,19 @@ module Clearly
       def initialize(root_node, child_key)
         @root_node = root_node
         @child_key = child_key
+
+        @discovered_nodes = []
+        @paths = []
+
         self
       end
 
       # build an array that contains paths from the root to all leaves
       # @return [Array] paths from root to leaf
       def branches
-        @discovered_nodes = []
-        @paths = []
-        traverse_branches(@root_node, nil)
+        if @discovered_nodes.blank? && @paths.blank?
+          traverse_branches(@root_node, nil)
+        end
         @paths
       end
 

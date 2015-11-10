@@ -6,6 +6,9 @@ module Clearly
       include Clearly::Query::Compose::Conditions
       include Clearly::Query::Validate
 
+      # All text fields operator.
+      OPERATOR_ALL_TEXT = :all_text_fields
+
       # @return [Array<Clearly::Query::Definition>] available definitions
       attr_reader :definitions
 
@@ -26,10 +29,10 @@ module Clearly
       # @return [Clearly::Query::Composer]
       def self.from_active_record
         models = ActiveRecord::Base
-            .descendants
-            .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
-            .sort { |a, b| a.name <=> b.name }
-            .uniq { |d| d.arel_table.name }
+                     .descendants
+                     .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
+                     .sort { |a, b| a.name <=> b.name }
+                     .uniq { |d| d.arel_table.name }
 
         definitions = models.map do |d|
           if d.name.include?('HABTM_')
@@ -45,11 +48,31 @@ module Clearly
       # Composes a query from a parsed filter hash.
       # @param [ActiveRecord::Base] model
       # @param [Hash] hash
-      # @return [Arel::Nodes::Node, Array<Arel::Nodes::Node>]
+      # @return [ActiveRecord::Relation]
       def query(model, hash)
+        conditions = conditions(model, hash)
+        query = model.all
+        validate_query(query)
+        conditions.each do |condition|
+          validate_condition(condition)
+          query = query.where(condition)
+        end
+        query
+      end
+
+      # Composes Arel conditions from a parsed filter hash.
+      # @param [ActiveRecord::Base] model
+      # @param [Hash] hash
+      # @return [Array<Arel::Nodes::Node>]
+      def conditions(model, hash)
+        validate_model(model)
+        validate_hash(hash)
+
         definition = select_definition_from_model(model)
+        cleaned_query_hash = Clearly::Query::Cleaner.new.do(hash)
+
         # default combiner is :and
-        parse_query(definition, :and, hash)
+        parse_conditions(definition, :and, cleaned_query_hash)
       end
 
       private
@@ -82,17 +105,15 @@ module Clearly
       # @param [Symbol] query_key
       # @param [Hash] query_value
       # @return [Array<Arel::Nodes::Node>]
-      def parse_query(definition, query_key, query_value)
+      def parse_conditions(definition, query_key, query_value)
         if query_value.blank? || query_value.size < 1
           msg = "filter hash must have at least 1 entry, got '#{query_value.size}'"
           fail Clearly::Query::QueryArgumentError.new(msg, {hash: query_value})
         end
 
         logical_operators = Clearly::Query::Compose::Conditions::OPERATORS_LOGICAL
-
         mapped_fields = definition.field_mappings.keys
         standard_fields = definition.all_fields - mapped_fields
-
         conditions = []
 
         if logical_operators.include?(query_key)
@@ -105,6 +126,11 @@ module Clearly
           field_conditions = parse_standard_field(definition, query_key, query_value)
           conditions.push(*field_conditions)
 
+        elsif OPERATOR_ALL_TEXT == query_key
+          # build conditions for all text fields combined with or
+          field_condition = parse_all_text_fields(definition, query_value)
+          conditions.push(field_condition)
+
         elsif mapped_fields.include?(query_key)
           # then deal with mapped fields
           field_conditions = parse_mapped_field(definition, query_key, query_value)
@@ -114,12 +140,12 @@ module Clearly
           # finally deal with fields from other tables
           field_conditions = parse_custom(definition, query_key, query_value)
           conditions.push(field_conditions)
+
         else
           fail Clearly::Query::QueryArgumentError.new("unrecognised operator or field '#{query_key}'")
         end
 
         conditions
-
       end
 
       # Parse a logical operator and it's value.
@@ -130,8 +156,9 @@ module Clearly
       def parse_logical_operator(definition, logical_operator, value)
         validate_definition_instance(definition)
         validate_symbol(logical_operator)
+        validate_not_blank(value)
         validate_hash(value)
-        conditions = value.map { |key, value| parse_query(definition, key, value) }
+        conditions = value.map { |key, value| parse_conditions(definition, key, value) }
         condition_combine(logical_operator, *conditions)
       end
 
@@ -143,10 +170,38 @@ module Clearly
       def parse_standard_field(definition, field, value)
         validate_definition_instance(definition)
         validate_symbol(field)
+        validate_not_blank(value)
         validate_hash(value)
         value.map do |operator, operation_value|
           condition_components(operator, definition.table, field, definition.all_fields, operation_value)
         end
+      end
+
+      # Parse the conditions for all text fields.
+      # @param [Clearly::Query::Definition] definition
+      # @param [Hash] value
+      # @return [Array<Arel::Nodes::Node>]
+      def parse_all_text_fields(definition, value)
+        validate_definition_instance(definition)
+        validate_not_blank(value)
+        validate_hash(value)
+
+        # build conditions for all text fields
+        conditions = definition.text_fields.map do |text_field|
+          value.map do |operator, operation_value|
+            # cater for standard fields and mapped fields
+            mapping = definition.get_field_mapping(text_field)
+            if mapping.nil?
+              condition_components(operator, definition.table, text_field, definition.text_fields, operation_value)
+            else
+              validate_node_or_attribute(mapping)
+              condition_node(operator, mapping, operation_value)
+            end
+          end
+        end
+
+        # combine conditions using :or
+        condition_combine(:or, conditions)
       end
 
       # Parse a mapped field and it's conditions.
@@ -159,6 +214,7 @@ module Clearly
         validate_symbol(field)
         fail Clearly::Query::QueryArgumentError.new('field name must contain a dot (.)') unless field.to_s.include?('.')
 
+        validate_not_blank(value)
         validate_hash(value)
 
         # extract table and field
@@ -189,6 +245,7 @@ module Clearly
         validate_definition_instance(definition)
         mapping = definition.get_field_mapping(field)
         validate_node_or_attribute(mapping)
+        validate_not_blank(value)
         validate_hash(value)
         value.map do |operator, operation_value|
           condition_node(operator, mapping, operation_value)
@@ -206,12 +263,12 @@ module Clearly
         [conditions].flatten.each { |c| validate_node_or_attribute(c) }
 
         current_model = definition.model
-        current_table = definition.table
+        #current_table = definition.table
         current_joins = definition.joins
 
         other_table = other_definition.table
         other_model = other_definition.model
-        other_joins = other_definition.joins
+        #other_joins = other_definition.joins
 
         # build an exist subquery to apply conditions that
         # refer to another table
