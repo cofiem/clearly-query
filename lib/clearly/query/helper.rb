@@ -67,6 +67,11 @@ module Clearly
           Arel::Nodes::Exists.new(node)
         end
 
+        # Construct an Arel representation of a SQL function.
+        # @param [String] name
+        # @param [String, Arel::Nodes::Node] expression
+        # @param [String] function_alias
+        # @return [Arel::Nodes::Node]
         def named_function(name, expression, function_alias = nil)
           Arel::Nodes::NamedFunction.new(name, expression, function_alias)
         end

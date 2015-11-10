@@ -6,6 +6,9 @@ module Clearly
       include Clearly::Query::Compose::Conditions
       include Clearly::Query::Validate
 
+      # All text fields operator.
+      OPERATOR_ALL_TEXT = :all_text_fields
+
       # @return [Array<Clearly::Query::Definition>] available definitions
       attr_reader :definitions
 
@@ -26,10 +29,10 @@ module Clearly
       # @return [Clearly::Query::Composer]
       def self.from_active_record
         models = ActiveRecord::Base
-            .descendants
-            .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
-            .sort { |a, b| a.name <=> b.name }
-            .uniq { |d| d.arel_table.name }
+                     .descendants
+                     .reject { |d| d.name == 'ActiveRecord::SchemaMigration' }
+                     .sort { |a, b| a.name <=> b.name }
+                     .uniq { |d| d.arel_table.name }
 
         definitions = models.map do |d|
           if d.name.include?('HABTM_')
@@ -109,10 +112,8 @@ module Clearly
         end
 
         logical_operators = Clearly::Query::Compose::Conditions::OPERATORS_LOGICAL
-
         mapped_fields = definition.field_mappings.keys
         standard_fields = definition.all_fields - mapped_fields
-
         conditions = []
 
         if logical_operators.include?(query_key)
@@ -125,6 +126,11 @@ module Clearly
           field_conditions = parse_standard_field(definition, query_key, query_value)
           conditions.push(*field_conditions)
 
+        elsif OPERATOR_ALL_TEXT == query_key
+          # build conditions for all text fields combined with or
+          field_condition = parse_all_text_fields(definition, query_value)
+          conditions.push(field_condition)
+
         elsif mapped_fields.include?(query_key)
           # then deal with mapped fields
           field_conditions = parse_mapped_field(definition, query_key, query_value)
@@ -134,12 +140,12 @@ module Clearly
           # finally deal with fields from other tables
           field_conditions = parse_custom(definition, query_key, query_value)
           conditions.push(field_conditions)
+
         else
           fail Clearly::Query::QueryArgumentError.new("unrecognised operator or field '#{query_key}'")
         end
 
         conditions
-
       end
 
       # Parse a logical operator and it's value.
@@ -169,6 +175,33 @@ module Clearly
         value.map do |operator, operation_value|
           condition_components(operator, definition.table, field, definition.all_fields, operation_value)
         end
+      end
+
+      # Parse the conditions for all text fields.
+      # @param [Clearly::Query::Definition] definition
+      # @param [Hash] value
+      # @return [Array<Arel::Nodes::Node>]
+      def parse_all_text_fields(definition, value)
+        validate_definition_instance(definition)
+        validate_not_blank(value)
+        validate_hash(value)
+
+        # build conditions for all text fields
+        conditions = definition.text_fields.map do |text_field|
+          value.map do |operator, operation_value|
+            # cater for standard fields and mapped fields
+            mapping = definition.get_field_mapping(text_field)
+            if mapping.nil?
+              condition_components(operator, definition.table, text_field, definition.text_fields, operation_value)
+            else
+              validate_node_or_attribute(mapping)
+              condition_node(operator, mapping, operation_value)
+            end
+          end
+        end
+
+        # combine conditions using :or
+        condition_combine(:or, conditions)
       end
 
       # Parse a mapped field and it's conditions.

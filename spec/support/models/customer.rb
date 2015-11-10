@@ -53,11 +53,7 @@ class Customer < ActiveRecord::Base
                     }
                 ]
             }
-        ],
-        defaults: {
-            order_by: :created_at,
-            direction: :desc
-        }
+        ]
     }
   end
 end

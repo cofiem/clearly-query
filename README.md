@@ -54,12 +54,12 @@ and
             fields: {
                 valid: [:name, :last_contact_at],
                 text: [:name],
-                mappings: [
+                mappings: [ # these mappings are built in the database, and are only used for comparison, not projection
                     {
                         name: :title,
                         value: Clearly::Query::Helper.string_concat(
                             Customer.arel_table[:name],
-                            Arel::Nodes.build_quoted(' title'))
+                            Clearly::Query::Helper.sql_quoted(' title'))
                     }
                 ]
             },
@@ -91,6 +91,14 @@ There are two ways to do this. Either compose an ActiveRecord query or compose t
     arel_conditions = composer.conditions(model, query_hash)
     # or
     query = composer.query(model, query_hash)
+
+### Building custom Arel queries
+
+There is also a class to aid in building Arel queries yourself.
+
+Have a look at the [Clearly::Query::Compose::Custom](./lib/clearly/query/compose/custom.rb) class and the
+[tests](./spec/lib/clearly/query/compose/custom_spec.rb)
+for more details.
 
 ## Helper methods and classes
 

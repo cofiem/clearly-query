@@ -6,6 +6,10 @@ and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 
 ## Unreleased
 
+### Added
+ - Operator to compare all text fields using OR.
+ - Improved tests
+
 ### Changed
  - Two methods for Composer: `#query` to compose an ActiveRecord query and `#conditions` to compose an array of Arel conditions.
  - Hash cleaner applied within Composer methods.

@@ -314,7 +314,34 @@ describe Clearly::Query::Composer do
         conditions = composer.conditions(Order, hash)
         expect(conditions.size).to eq(1)
 
-        expected = "\"orders\".\"shipped_at\" < '2015-10-24' AND (SELECT \"customers\".\"name\" FROM \"customers\" WHERE \"customers\".\"id\" = \"orders\".\"customer_id\") || ' (' || CASE WHEN \"orders\".\"shipped_at\" IS NULL THEN 'not shipped' ELSE \"orders\".\"shipped_at\" END || ')' NOT LIKE 'alice%'"
+        expected = "\"orders\".\"shipped_at\" < '2015-10-24' AND (SELECT \"customers\".\"name\" FROM \"customers\" WHERE \"customers\".\"id\" = \"orders\".\"customer_id\") || ' (' || (CASE WHEN \"orders\".\"shipped_at\" IS NULL THEN 'not shipped' ELSE \"orders\".\"shipped_at\" END) || ') ' NOT LIKE 'alice%'"
+        expect(conditions.first.to_sql).to eq(expected)
+
+        query = Order.all
+        conditions.each { |c| query = query.where(c) }
+        expect(query.to_a).to eq([])
+      end
+
+      it 'is given a valid query for all text fields' do
+        hash = cleaner.do({and: {all_text_fields: {starts_with: 'a'}}})
+        conditions = composer.conditions(Product, hash)
+        expect(conditions.size).to eq(1)
+
+        expected = "(((\"products\".\"brand\" || ' ' || \"products\".\"name\" || ' (' || \"products\".\"code\" || ')' LIKE 'a%' OR \"products\".\"name\" LIKE 'a%') OR \"products\".\"code\" LIKE 'a%') OR \"products\".\"brand\" LIKE 'a%')"
+        expect(conditions.first.to_sql).to eq(expected)
+
+        query = Product.all
+        conditions.each { |c| query = query.where(c) }
+        expect(query.to_a).to eq([])
+      end
+
+      it 'escapes characters in SQL like' do
+        hash = cleaner.do({and: {shipped_at: {lt: '2015-10-24'}, title: {does_not_start_with: 'a\l_i%c\'e|'}}})
+        conditions = composer.conditions(Order, hash)
+        expect(conditions.size).to eq(1)
+
+        escaped = 'a\\\l\\_i\\%c\'\'e\\|%'
+        expected = "\"orders\".\"shipped_at\" < '2015-10-24' AND (SELECT \"customers\".\"name\" FROM \"customers\" WHERE \"customers\".\"id\" = \"orders\".\"customer_id\") || ' (' || (CASE WHEN \"orders\".\"shipped_at\" IS NULL THEN 'not shipped' ELSE \"orders\".\"shipped_at\" END) || ') ' NOT LIKE '#{escaped}'"
         expect(conditions.first.to_sql).to eq(expected)
 
         query = Order.all

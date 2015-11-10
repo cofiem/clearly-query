@@ -53,11 +53,7 @@ class Part < ActiveRecord::Base
                     }
                 ]
             }
-        ],
-        defaults: {
-            order_by: :name,
-            direction: :asc
-        }
+        ]
     }
   end
 end

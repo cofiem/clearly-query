@@ -159,7 +159,7 @@ module Clearly
         fail Clearly::Query::QueryArgumentError, "value must be a boolean, got '#{value}'" if !value.is_a?(TrueClass) && !value.is_a?(FalseClass)
       end
 
-      # Escape wildcards in like value..
+      # Escape wildcards in LIKE value.
       # @param [String] value
       # @return [String] sanitized value
       def sanitize_like_value(value)
@@ -251,10 +251,6 @@ module Clearly
 
         # associations
         validate_spec_association(value[:associations])
-
-        # defaults
-        validate_not_blank(value[:defaults])
-        validate_hash(value[:defaults])
       end
 
       # Validate association specification
