@@ -6,9 +6,11 @@ and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 
 ## Unreleased
 
+## Release [v1.0.0](https://github.com/cofiem/clearly-query/releases/tag/v1.0.0) (2015-11-10)
+
 ### Added
  - Operator to compare all text fields using OR.
- - Improved tests
+ - Improved tests and coverage.
 
 ### Changed
  - Two methods for Composer: `#query` to compose an ActiveRecord query and `#conditions` to compose an array of Arel conditions.
@@ -33,6 +35,16 @@ and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 
  - Transported hash filter modules and classes from [baw-server](https://github.com/QutBioacoustics/baw-server)
   - Created change log
+
+----
+
+## Semver Summary
+
+Given a version number MAJOR.MINOR.PATCH, increment the:
+
+1. MAJOR version when you make incompatible API changes,
+1. MINOR version when you add functionality in a backwards-compatible manner, and
+1. PATCH version when you make backwards-compatible bug fixes.
 
 ## Change log categories
 
