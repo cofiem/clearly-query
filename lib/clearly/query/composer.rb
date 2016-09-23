@@ -35,14 +35,16 @@ module Clearly
                      .uniq { |d| d.arel_table.name }
 
         definitions = models.map do |d|
-          if d.name.include?('HABTM_')
+          if d.name.include?('::InternalMetadata')
+            # ignore the AR metadata
+          elsif d.name.include?('HABTM_')
             Clearly::Query::Definition.new({table: d.arel_table})
           else
             Clearly::Query::Definition.new({model: d, hash: d.clearly_query_def})
           end
         end
 
-        Composer.new(definitions)
+        Composer.new(definitions.compact)
       end
 
       # Composes a query from a parsed filter hash.
