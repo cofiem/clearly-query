@@ -6,6 +6,12 @@ and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 
 ## Unreleased
 
+## Release [v1.1.0](https://github.com/cofiem/clearly-query/releases/tag/v1.1.0) (2016-09-23)
+
+### Added
+
+ - Now supports ActiveRecord 4.2 and 5, and Arel 6 and 7.
+
 ## Release [v1.0.0](https://github.com/cofiem/clearly-query/releases/tag/v1.0.0) (2015-11-10)
 
 ### Added
