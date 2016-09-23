@@ -18,6 +18,9 @@ Uses [Arel](https://github.com/rails/arel) and [ActiveRecord](https://github.com
 [![Join the chat at https://gitter.im/cofiem/clearly-query](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cofiem/clearly-query?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Gem Version](https://badge.fury.io/rb/clearly-query.svg)](https://badge.fury.io/rb/clearly-query)
 
+
+Compatible with ActiveRecord 4.2 and 5, and Arel 6 & 7.
+
 ## Installation
 
 Add this line to your application's Gemfile:

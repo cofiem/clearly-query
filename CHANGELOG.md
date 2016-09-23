@@ -6,6 +6,12 @@ and [keeps a change log](http://keepachangelog.com/) (you're reading it!).
 
 ## Unreleased
 
+## Release [v1.1.0](https://github.com/cofiem/clearly-query/releases/tag/v1.1.0) (2016-09-23)
+
+### Added
+
+ - Now supports ActiveRecord 4.2 and 5, and Arel 6 and 7.
+
 ## Release [v1.0.0](https://github.com/cofiem/clearly-query/releases/tag/v1.0.0) (2015-11-10)
 
 ### Added
@@ -48,20 +54,9 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 
 ## Change log categories
 
-### Added
-new features
-
-### Changed
-changes in existing functionality
-
-### Deprecated
-once-stable features removed in upcoming releases
-
-### Removed
-deprecated features removed in this release
-
-### Fixed
-bug fixes
-
-### Security
-vulnerabilities or other problems that should be highlighted
+ - Added: new features
+ - Changed: changes in existing functionality
+ - Deprecated: once-stable features removed in upcoming releases
+ - Removed: deprecated features removed in this release
+ - Fixed: bug fixes
+ - Security: vulnerabilities or other problems that should be highlighted
