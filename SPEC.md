@@ -77,10 +77,10 @@ Use a single comma for separating the two values.
 
 An array of values to match the attribute value. Compared using an exact match (which may be case sensitive, depending on the database).
 
-    Operator |            Query hash               |                             SQL
-    ---------|-------------------------------------|-----------------------------------------------
-    in       | {attr: {in: ['value1,value2']}}     | "table"."attr" IN ('value1', 'value2')
-    not_in   | {attr: {not_in: ['value1,value2']}} | "table"."attr" NOT IN ('value1', 'value2')
+    Operator |            Query hash                  |                             SQL
+    ---------|----------------------------------------|-----------------------------------------------
+    in       | {attr: {in: ['value1', 'value2']}}     | "table"."attr" IN ('value1', 'value2')
+    not_in   | {attr: {not_in: ['value1', 'value2']}} | "table"."attr" NOT IN ('value1', 'value2')
     
 ##### Contents Match
 
