@@ -92,8 +92,8 @@ Regular expression match may not be supported by all databases.
 
                         Operator                          |           Query hash              |                SQL
     ------------------------------------------------------|-----------------------------------|-----------------------------------------------
-    contains, contain                                     | {attr: {contain: 'value'}}        | "table"."attr" LIKE 'value'
-    not_contains, not_contain, does_not_contain           | {attr: {not_contain: 'value'}}    | "table"."attr" NOT LIKE 'value'
+    contains, contain                                     | {attr: {contain: 'value'}}        | "table"."attr" LIKE '%value%'
+    not_contains, not_contain, does_not_contain           | {attr: {not_contain: 'value'}}    | "table"."attr" NOT LIKE '%value%'
     starts_with, start_with                               | {attr: {start_with: 'value'}}     | "table"."attr" LIKE 'value%'
     not_starts_with,not_start_with, does_not_start_with   | {attr: {not_start_with: 'value'}} | "table"."attr" NOT LIKE 'value%'
     ends_with, end_with                                   | {attr: {end_with: 'value'}}       | "table"."attr" LIKE '%value'
