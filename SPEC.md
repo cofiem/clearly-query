@@ -99,4 +99,4 @@ Regular expression match may not be supported by all databases.
     ends_with, end_with                                   | {attr: {end_with: 'value'}}       | "table"."attr" LIKE '%value'
     not_ends_with, not_end_with, does_not_end_with        | {attr: {not_end_with: 'value'}}   | "table"."attr" NOT LIKE '%value'
     regex, regex_match, matches, match                    | {attr: {regex: 'value'}}          | "table"."attr" SIMILAR TO 'value'
-    not_regex, not_regex_match, does_not_match, not_match | {attr: {not_end_with: 'value'}}   | "table"."attr" NOT SIMILAR TO 'value'
+    not_regex, not_regex_match, does_not_match, not_match | {attr: {not_regex: 'value'}}      | "table"."attr" NOT SIMILAR TO 'value'
